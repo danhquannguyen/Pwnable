@@ -55,10 +55,10 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 > <img width="513" height="307" alt="image" src="https://github.com/user-attachments/assets/6f70cd67-1ee4-4d0e-a30b-2ec92330b8d3" />
 >
 > Nếu chúng ta vẽ biểu đồ số lượng **bóng bán dẫn** (transistors) trong các bộ vi xử lý Intel khác nhau theo năm ra mắt, và sử dụng thang đo logarit (logarithmic scale) cho trục y, chúng ta có thể thấy rằng sự tăng trưởng này thật sự phi thường. Khi kẻ một đường thẳng khớp với các điểm dữ liệu (fitting a line through the data), chúng ta thấy rằng số lượng bóng bán dẫn tăng với tốc độ hàng năm xấp xỉ 37%, nghĩa là số lượng bóng bán dẫn tăng gấp đôi sau mỗi khoảng 26 tháng. Sự tăng trưởng này đã được duy trì bền bỉ trong suốt lịch sử nhiều thập kỷ của các bộ vi xử lý x86.Năm 1965, Gordon Moore, một nhà đồng sáng lập của Tập đoàn Intel, đã **ngoại suy** (extrapolated) từ công nghệ chip thời bấy giờ (khi đó họ có thể chế tạo các mạch điện với khoảng 64 bóng bán dẫn trên một con chip duy nhất) để đưa ra dự đoán rằng số lượng bóng bán dẫn trên mỗi chip sẽ tăng gấp đôi mỗi năm trong 10 năm tiếp theo. Dự đoán này sau đó được biết đến với tên gọi **Định luật Moore** (Moore's Law). Hóa ra, dự đoán của ông hơi có một chút lạc quan (vì thực tế là mất nhiều hơn 1 năm để gấp đôi), nhưng đồng thời cũng quá thiển cận/ngắn hạn (vì ông chỉ dự đoán cho 10 năm). Trong hơn 50 năm qua, **ngành công nghiệp bán dẫn** (semiconductor industry) đã có khả năng tăng gấp đôi số lượng bóng bán dẫn với chu kỳ trung bình cứ sau mỗi 18 tháng.Những **tốc độ tăng trưởng theo cấp số nhân** (exponential growth rates) tương tự cũng đã diễn ra đối với các khía cạnh khác của công nghệ máy tính, bao gồm dung lượng lưu trữ của đĩa từ (ổ cứng HDD) và các bộ nhớ bán dẫn (RAM, SSD). Những tốc độ tăng trưởng đáng chú ý này chính là những động lực chính thúc đẩy cuộc cách mạng máy tính.
+
 <br>
 
 ## 3.2 Program Encodings (Mã hóa chương trình)
-<br>
 
   * Giả sử chúng ta viết một chương trình C dưới dạng hai tệp p1.c và p2.c. Sau đó, chúng ta có thể biên dịch (compile) đoạn mã này bằng cách sử dụng một dòng lệnh Unix (Unix command line):
     ```bash
@@ -94,10 +94,22 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 >
 >Mục tiêu của chúng tôi khi nghiên cứu các ví dụ trong tài liệu này là để minh họa cách kiểm tra assembly code và ánh xạ nó ngược lại với các cấu trúc tìm thấy trong các ngôn ngữ lập trình bậc cao. Bạn sẽ cần phải điều chỉnh, thích nghi các kỹ thuật này để phù hợp với phong cách mã lệnh được tạo ra bởi trình biên dịch cụ thể mà bạn đang sử dụng.
 
-### 3.2.2 Code Examples
 <br>
 
+### 3.2.2 Code Examples
 
+ * Giả sử chúng ta viết một tệp mã nguồn C có tên `mstore.c` chứa một định nghĩa hàm sau:
+
+   ```c
+   long mult2(long, long);
+
+   void multstore(long x, long y, long *dest) {
+       long t = mult2(x, y);
+       *dest = t;
+   }
+   ```
+
+   
 ## Data Formats (Định dạng dữ liệu)
 
 ## Accessing Information (Truy cập thông tin)
