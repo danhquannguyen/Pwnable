@@ -309,7 +309,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 ## 3.3 Data Formats (Định dạng dữ liệu)
 <br>
 
- * Do nguồn gốc là kiến trúc 16-bit rồi mở rộng lên 32-bit, Intel sử dụng thuật ngữ 'word' (từ) để chỉ kiểu dữ liệu 16-bit. Dựa trên cơ sở đó, họ gọi các đại lượng 32-bit là 'double words' (từ kép) và các đại lượng 64-bit là 'quad words' (từ bốn). Hình 3.1 cho thấy các cách biểu diễn x86-64 được sử dụng cho các kiểu dữ liệu nguyên thủy của C. Các giá trị `int` tiêu chuẩn được lưu trữ dưới dạng 'double words' (32-bit). Các con trỏ (được hiển thị ở đây dưới dạng `char *`) được lưu trữ dưới dạng 'quad words' 8-byte, đúng như dự kiến trên một máy 64-bit. Với kiến trúc x86-64, kiểu dữ liệu `long` được triển khai với 64 bit, cho phép một dải giá trị rất rộng. Hầu hết các ví dụ mã nguồn trong chương này sử dụng các kiểu dữ liệu con trỏ và `long`, vì vậy chúng sẽ thao tác trên các 'quad words'. Tập lệnh x86-64 cũng bao gồm đầy đủ các lệnh cho byte, word và double word.
+ * Do nguồn gốc là kiến trúc 16-bit rồi mở rộng lên 32-bit, Intel sử dụng thuật ngữ 'word' để chỉ kiểu dữ liệu 16-bit. Dựa trên cơ sở đó, họ gọi các đại lượng 32-bit là 'double words' và các đại lượng 64-bit là 'quad words' . Hình 3.1 cho thấy các cách biểu diễn x86-64 được sử dụng cho các kiểu dữ liệu nguyên thủy của C. Các giá trị `int` tiêu chuẩn được lưu trữ dưới dạng 'double words' (32-bit). Các con trỏ (được hiển thị ở đây dưới dạng `char *`) được lưu trữ dưới dạng 'quad words' 8-byte, đúng như dự kiến trên một máy 64-bit. Với kiến trúc x86-64, kiểu dữ liệu `long` được triển khai với 64 bit, cho phép một dải giá trị rất rộng. Hầu hết các ví dụ mã nguồn trong chương này sử dụng các kiểu dữ liệu con trỏ và `long`, vì vậy chúng sẽ thao tác trên các 'quad words'. Tập lệnh x86-64 cũng bao gồm đầy đủ các lệnh cho byte, word và double word.
 
  * Các số dấu phẩy động (floating-point) có hai định dạng chính: giá trị độ chính xác đơn (4-byte), tương ứng với kiểu dữ liệu `float` trong C, và giá trị độ chính xác kép (8-byte), tương ứng với kiểu dữ liệu `double` trong C. Các bộ vi xử lý trong dòng x86 trước đây đã triển khai tất cả các phép toán dấu phẩy động với định dạng dấu phẩy động 80-bit (10-byte) đặc biệt (xem Bài tập 2.86). Định dạng này có thể được chỉ định trong các chương trình C bằng cách sử dụng khai báo `long double`. Tuy nhiên, chúng tôi khuyên bạn không nên sử dụng định dạng này. Nó không có tính tương thích (portable) với các dòng máy khác và thường không được triển khai với phần cứng hiệu năng cao như các phép toán độ chính xác đơn và kép.
 
@@ -326,10 +326,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
    **Figure 3.1** Size of C data in x86_64. With a 64-bit machine, pointers are 8 bytes long.
 
  * Như bảng ở Hình 3.1 chỉ ra, hầu hết các lệnh hợp ngữ do `gcc` tạo ra đều có một hậu tố (suffix) gồm một ký tự duy nhất biểu thị kích thước của toán hạng. Ví dụ, lệnh di chuyển dữ liệu có bốn biến thể: `movb` (di chuyển byte), `movw` (di chuyển word), `movl` (di chuyển double word) và `movq` (di chuyển quad word). Hậu tố 'l' được sử dụng cho double word, vì các đại lượng 32-bit được coi là "long words". Mã hợp ngữ sử dụng hậu tố 'l' để chỉ định một số nguyên 4-byte cũng như một số dấu phẩy động độ chính xác kép 8-byte. Điều này không gây ra bất kỳ sự mơ hồ nào, vì mã dấu phẩy động liên quan đến một tập hợp các lệnh và thanh ghi hoàn toàn khác biệt
-   
-   
-
- * Như bảng ở Hình 3.1 chỉ ra, hầu hết các lệnh hợp ngữ do gcc tạo ra đều có một hậu tố (suffix) gồm một ký tự duy nhất biểu thị kích thước của toán hạng. Ví dụ, lệnh di chuyển dữ liệu có bốn biến thể: movb (di chuyển byte), movw (di chuyển word), movl (di chuyển double word) và movq (di chuyển quad word). Hậu tố 'l' được sử dụng cho double word, vì các đại lượng 32-bit được coi là "long words". Mã hợp ngữ sử dụng hậu tố 'l' để chỉ định một số nguyên 4-byte cũng như một số dấu phẩy động độ chính xác kép 8-byte. Điều này không gây ra bất kỳ sự mơ hồ nào, vì mã dấu phẩy động liên quan đến một tập hợp các lệnh và thanh ghi hoàn toàn khác biệt.
+  
 
 ## 3.4 Accessing Information (Truy cập thông tin)
 <br>
@@ -351,7 +348,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
  * Hầu hết các câu lệnh đều có một hoặc nhiều toán hạng (operands) xác định các giá trị nguồn được sử dụng để thực hiện một thao tác và vị trí đích để đặt kết quả. Kiến trúc x86-64 hỗ trợ một số dạng toán hạng (xem Hình 3.3). Các giá trị nguồn có thể được cung cấp dưới dạng hằng số, hoặc được đọc từ thanh ghi (registers) hay bộ nhớ (memory). Kết quả có thể được lưu trữ trong thanh ghi hoặc bộ nhớ. Do đó, các khả năng toán hạng có thể được phân loại thành ba kiểu:
    * Kiểu thứ nhất, tức thời (**immediate**): Dành cho các giá trị hằng số. Trong assembly code định dạng AT&T, chúng được viết bằng một dấu `$` theo sau là một số nguyên sử dụng ký hiệu chuẩn của ngôn ngữ C — ví dụ: `$-577` hoặc `$0x1F`. Các câu lệnh khác nhau cho phép các dải giá trị tức thời khác nhau; assembler sẽ tự động chọn cách mã hóa một giá trị sao cho nhỏ gọn nhất.
    * Kiểu thứ hai, thanh ghi (**register**): Biểu thị nội dung của một thanh ghi, đó là một trong mười sáu phần bậc thấp (low-order portions) có kích thước 8, 4, 2, hoặc 1 byte của các thanh ghi, tương ứng dành cho các toán hạng có 64, 32, 16, hoặc 8 bit.
- * Trong Hình 3.3, chúng tôi sử dụng ký hiệu ra để biểu thị một thanh ghi `a` bất kỳ và biểu thị giá trị của nó bằng tham chiếu `R[ra]`, xem tập hợp các thanh ghi như một mảng `R` được đánh chỉ số bởi các mã định danh thanh ghi (register identifiers).
+ * Trong Hình 3.3, chúng tôi sử dụng ký hiệu ra để biểu thị một thanh ghi `a` bất kỳ và biểu thị giá trị của nó bằng tham chiếu $R[r_a]$, xem tập hợp các thanh ghi như một mảng `R` được đánh chỉ số bởi các mã định danh thanh ghi (register identifiers).
    * Kiểu thứ ba là tham chiếu bộ nhớ (**memory reference**), trong đó chúng ta truy cập vào một vị trí bộ nhớ nào đó dựa trên một địa chỉ được tính toán, thường được gọi là **địa chỉ hiệu dụng** (effective address). Vì chúng ta coi bộ nhớ như một mảng byte khổng lồ, chúng ta sử dụng ký hiệu $M_b[Addr]$ để biểu thị một tham chiếu đến giá trị $b$-byte được lưu trữ trong bộ nhớ bắt đầu tại địa chỉ $Addr$. Để đơn giản hóa vấn đề, chúng ta thường sẽ lược bỏ chỉ số dưới $b$.
  * Như Hình 3.3 cho thấy, có nhiều chế độ định địa chỉ (addressing modes) khác nhau cho phép các dạng tham chiếu bộ nhớ khác nhau. Dạng tổng quát nhất được hiển thị ở cuối bảng với cú pháp $Imm(r_b, r_i, s)$. Một tham chiếu như vậy có bốn thành phần: một độ lệch tức thời (immediate offset) $Imm$, một thanh ghi cơ sở (base register) $r_b$, một thanh ghi chỉ số (index register) $r_i$, và một hệ số tỷ lệ (scale factor) $s$, trong đó $s$ bắt buộc phải là 1, 2, 4, hoặc 8. Cả thanh ghi cơ sở và thanh ghi chỉ số đều phải là các thanh ghi 64-bit. Địa chỉ hiệu dụng được tính toán theo công thức: $Imm + R[r_b] + R[r_i] \cdot s$. Dạng tổng quát này thường thấy khi tham chiếu đến các phần tử của mảng. Các dạng khác chỉ đơn giản là những trường hợp đặc biệt của dạng tổng quát này, trong đó một số thành phần được lược bỏ. Như chúng ta sẽ thấy, các chế độ định địa chỉ phức tạp hơn rất hữu ích khi tham chiếu đến các phần tử của mảng (array) và cấu trúc (structure).
 
@@ -359,15 +356,15 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
    |:--|:--|:--|:--|
    |Immediate|$_Imm_|$Imm$|Immadiate|
    |Register|$r_a$|$M[R[r_a]]$|Register|
-   |Memory|$_Imm_|M[_Imm_]|Absolute|
+   |Memory|$Imm$|$M[Imm]$|Absolute|
    |Memory|($r_a$)|$M[R[r_a]]$|Indirect|
    |Memory|_Imm_($r_b$)|$M[Imm+R[r_b]$|Base + displacement|
    |Memory|$(r_b,r_i)$|$M[R[r_b]+R[r_i]]$|Indexed|
    |Memory|_Imm_$(r_b,r_i)$|$M[Imm+R[r_b]+R[r_i]]$|Indexed|
-   |Memory|$(,r_i,s)$|$M[R[r_i].s$|Scaled indexed|
-   |Memory|$Imm(,r_i,s)$|$M[Imm+R[r_i]].s$|Scaled indexed|
-   |Memory|$(r_b,r_i,s)$|$M[R[r+b]+R[r_i].s$|Scaled indexed|
-   |Memory|$Imm(r_b,r_i,s)$|$M[Imm+R[r_b]+R[r_i]].s$|Scaled indexed|
+   |Memory|$(,r_i,s)$|$M[R[r_i].s]$|Scaled indexed|
+   |Memory|$Imm(,r_i,s)$|$M[Imm+R[r_i]].s]$|Scaled indexed|
+   |Memory|$(r_b,r_i,s)$|$M[R[r+b]+R[r_i].s]$|Scaled indexed|
+   |Memory|$Imm(r_b,r_i,s)$|$M[Imm+R[r_b]+R[r_i]].s]$|Scaled indexed|
 
    **Figure 3.3 Operand forms**. Operands can donote immediate(constant) values, register values, or values from memory. The scaling factor _s_ must be either 1,2,4, or 8.
 
