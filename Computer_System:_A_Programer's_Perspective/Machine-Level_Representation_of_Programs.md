@@ -109,11 +109,286 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
    }
    ```
 
+ * Để xem assembly code do trình biên dịch C tạo ra, chúng ta có thể sử dụng tùy chọn `-S` trên dòng lệnh:
+
+   ```bash
+   linux> gcc -Og -S mstore.c
+   ```
+
+ * Điều này sẽ khiến `gcc` chạy trình biên dịch để tạo ra một tệp hợp ngữ có tên là `mstore.s`, và sau đó dừng lại (không thực hiện các bước tiếp theo). (Thông thường, sau bước này, trình biên dịch sẽ tự động gọi trình dịch hợp ngữ — assembler — để tạo ra một tệp mã đối tượng object-code).
+ * Tệp mã hợp ngữ (assembly-code file) chứa nhiều khai báo khác nhau, bao gồm cả tập hợp các dòng mã sau đây:
+
+   ```asm
+   multstore:
+     pushq   %rbx
+     movq    %rdx, %rbx
+     call    mult2
+     movq    %rax, (%rbx)
+     popq    %rbx
+     ret
+   ```
+
+ * Mỗi dòng thụt lề trong đoạn mã tương ứng với một câu lệnh máy (machine instruction) đơn lẻ. Ví dụ, câu lệnh `pushq` biểu thị rằng nội dung của thanh ghi `%rbx` cần được đẩy (push) vào **ngăn xếp chương trình** (program stack). Mọi thông tin về tên biến cục bộ hoặc kiểu dữ liệu đã bị **loại bỏ hoàn toàn** (stripped away).
+ * Nếu chúng ta sử dụng command-line option `-c`, `gcc` sẽ thực hiện cả hai bước là biên dịch (compile) và dịch hợp ngữ (assemble) đoạn mã đó.
+
+   ```bash
+   linux> gcc -Og -c mstore.c
+   ```
    
-## Data Formats (Định dạng dữ liệu)
+ * Điều này sẽ tạo ra một **tệp mã đối tượng** (object-code file) `mstore.o` ở định dạng nhị phân (binary format) và do đó không thể xem trực tiếp được (bằng các trình soạn thảo văn bản thông thường). Nằm ẩn bên trong 1.368 byte của tệp mstore.o là một chuỗi gồm 14 byte với dạng biểu diễn **thập lục phân** (hexadecimal) như sau:
 
-## Accessing Information (Truy cập thông tin)
+   ```bash
+   53 48 89 d3 e8 00 00 00 00 48 89 5b c3
+   ```
 
+ * Đây là **mã đối tượng** (object code) tương ứng với các lệnh assembly đã được liệt kê trước đó. Một bài học quan trọng cần rút ra từ điều này là: chương trình được thực thi bởi máy tính chỉ đơn giản là một **chuỗi các byte** (sequence of bytes) dùng để mã hóa một loạt các câu lệnh. Máy tính có rất ít thông tin về đoạn mã nguồn (source code) ban đầu mà từ đó các câu lệnh này được tạo ra.Để kiểm tra nội dung của các tệp mã máy (machine-code files), một lớp các chương trình được gọi là **trình rã mã** (disassemblers) có thể mang lại giá trị vô giá. Những chương trình này tạo ra một định dạng tương tự như mã assembly từ machine code gốc. Đối với các hệ thống Linux, chương trình `objdump` (viết tắt của "object dump" - kết xuất đối tượng) có thể đảm nhiệm vai trò này khi được cung cấp command-line flag `-d`:
+
+   ```bash
+   linux> objdump -d mstore.o
+   ```
+
+ * Kết quả thu được (trong đó chúng tôi đã bổ sung thêm các số thứ tự dòng ở lề bên trái và các chú thích bằng chữ in nghiêng) là như sau:
+
+   ```bash
+           Disassembly of function sum in binary file mstore.o
+
+   1  0000000000000000 <multstore>:
+      offset    Byte                       Equivalent assembly language
+   2      0:    53                         push   %rbx
+   3      1:    48 89 d3                   mov    %rdx, %rbx
+   4      2:    e8 00 00 00 00             callq  9 <multstore+0x9>
+   5      3:    48 89 03                   mov    %rax, (%rbx)
+   6      c:    5b                         pop    %rbx
+   7      d:    c3                         retq
+   ```
+
+ *  Ở lề bên trái, chúng ta thấy 14 giá trị byte hexadecimal được liệt kê trong chuỗi byte đã chỉ ra trước đó, được phân chia thành các nhóm có từ 1 đến 5 byte. Mỗi nhóm này đại diện cho một câu lệnh (instruction) đơn lẻ, với dạng assembly-language tương đương được hiển thị ở lề bên phải. Một vài đặc điểm đáng chú ý về machine code và dạng biểu diễn rã mã (disassembled representation) của nó:
+   
+    * Các câu lệnh x86-64 có thể có độ dài dao động từ 1 đến 15 byte. Việc mã hóa lệnh (instruction encoding) được thiết kế sao cho các lệnh thường được sử dụng và những lệnh có ít **toán hạng** (operands) hơn sẽ yêu cầu số lượng byte nhỏ hơn so với các lệnh ít phổ biến hoặc các lệnh có nhiều toán hạng.
+    * Định dạng lệnh được thiết kế theo cách mà từ một vị trí bắt đầu nhất định, chỉ có duy nhất một cách **giải mã** (decoding) các byte đó thành các lệnh máy. Ví dụ, chỉ có lệnh `pushq %rbx` mới có thể bắt đầu bằng giá trị byte là `53`.
+    * Disassembler xác định assembly code hoàn toàn chỉ dựa trên các chuỗi byte nằm trong machine-code files. Nó hoàn toàn không cần quyền truy cập vào mã nguồn (source code) hay các tệp assembly code của chương trình. Disassembler sử dụng một quy ước đặt tên (naming convention) cho các lệnh hơi khác một chút so với assembly code được tạo ra bởi trình biên dịch `gcc`. Trong ví dụ của chúng ta, nó đã lược bỏ **hậu tố** (suffix) ‘q’ khỏi rất nhiều câu lệnh. Những hậu tố này là các ký hiệu chỉ định kích thước (size designators) và có thể được lược bỏ trong hầu hết các trường hợp. Ngược lại, disassembler lại thêm hậu tố ‘q’ vào các lệnh call và ret. Một lần nữa, các hậu tố này hoàn toàn có thể được lược bỏ một cách an toàn.
+  * Để tạo ra **mã thực thi thực tế** (actual executable code), chúng ta cần chạy một trình **liên kết** (linker) trên một tập hợp các **tệp mã đối tượng** (object-code files), trong đó bắt buộc phải có một tệp chứa hàm `main`. Giả sử trong tệp `main.c`, chúng ta có hàm sau đây:
+
+    ```c
+    #include<stdio.h>
+
+    void multstore(long, long, long *);
+
+    int main(){
+        long d;
+        multstore(2, 3, &d);
+        printf("2 * 3 --> %ld\n", d);
+        return 0;
+    }
+
+    long mult2(long a, long b){
+        long s = a * b;
+        return s;
+    }
+    ```  
+   
+  * Sau đó, chúng ta có thể tạo ra một **chương trình thực thi** (executable program) có tên là `prog` như sau:
+
+    ```bash
+    linux> gcc -Og -o prog main.c mstore.c
+    ```
+
+  * Tệp `prog` đã tăng kích thước lên 8.655 byte, bởi vì nó chứa không chỉ machine code cho các thủ tục mà chúng ta đã cung cấp, mà còn bao gồm cả mã lệnh được dùng để khởi động và kết thúc chương trình, cũng như các đoạn mã dùng để tương tác với hệ điều hành.
+    * Chúng ta có thể disassemble tệp `prog` như sau:
+
+       ```bash
+       linux> objdump -d prog
+       ```
+
+  * Disambler sẽ trích xuất ra nhiều chuỗi mã lệnh khác nhau, bao gồm cả những đoạn sau đây:
+
+    ```bash
+                  Disassembly of function sum in binary file prog
+    1      0000000000400540 <multstore>:
+    2          400540: 53                             push %rbx
+    3          400541: 48 89 d3                       mov %rdx,%rbx
+    4          400544: e8 42 00 00 00                 callq 40058b <mult2>
+    5          400549: 48 89 03                       mov %rax,(%rbx)
+    6          40054c: 5b                             pop %rbx
+    7          40054d: c3                             retq
+    8          40054e: 90                             nop
+    9          40054f: 90                             nop
+    ```
+
+ * Đoạn mã này gần như giống hệt với đoạn mã được tạo ra khi disassembly tệp `mstore.c`. Một điểm khác biệt quan trọng là các địa chỉ được liệt kê dọc theo cạnh trái đã khác đi —  linker đã dịch chuyển vị trí của đoạn mã này sang một dải địa chỉ khác. Điểm khác biệt thứ hai là linker đã điền sẵn địa chỉ mà lệnh `callq` cần dùng để gọi hàm `mult2` (dòng 4 trong đoạn disassembly). Một nhiệm vụ của linker là khớp nối (match) các lời gọi hàm với vị trí thực tế chứa mã thực thi của các hàm đó. Điểm khác biệt cuối cùng là chúng ta thấy có thêm hai dòng mã phụ (dòng 8–9). Những câu lệnh này sẽ không có bất kỳ tác động nào đến chương trình, vì chúng xuất hiện sau câu lệnh trả về (dòng 7). Chúng được chèn vào chỉ để kéo dài kích thước mã của hàm này cho tròn 16 byte, qua đó cho phép sắp xếp khối mã tiếp theo ở một vị trí tốt hơn nhằm tối ưu hóa hiệu năng của hệ thống bộ nhớ.
+
+> [!Note]
+> **How do I display the byte representation of a program**
+>
+> Để hiển thị mã đối tượng nhị phân (binary object code) của một chương trình (ví dụ: `mstore`), chúng ta sử dụng disassembler - sẽ được mô tả bên dưới để xác định xem mã của thủ tục (procedure) đó dài bao nhiêu byte. Trong trường hợp này, mã đó dài 14 byte. Sau đó, chúng ta chạy công cụ gỡ lỗi GNU `gdb` trên tệp `mstore.o` và nhập lệnh:
+>
+>  ```bash
+>  (gdb) x/14xb multstore
+>  ```
+>
+> Lệnh này yêu cầu `gdb` hiển thị (viết tắt là `x` — examine) 14 byte ở định dạng thập lục phân (cũng ký hiệu là `x`) với mỗi đơn vị là 1 byte (`b`), bắt đầu từ địa chỉ nơi hàm `multstore` được lưu trữ. Bạn sẽ thấy rằng `gdb` sở hữu nhiều tính năng hữu ích để phân tích các chương trình ở cấp độ máy, như sẽ được thảo luận trong Mục 3.10.2.
+
+
+### 3.2.3 Notes on Formatting
+<br>
+
+ * Assembly code được tạo ra bởi `gcc` rất khó để con người đọc hiểu. Một mặt nó chứa đựng những thông tin mà chúng ta không cần phải bận tâm đến; mặt khác, nó lại không cung cấp bất kỳ mô tả nào về chương trình hoặc cách thức hoạt động của nó, Ví dụ, giả sử chúng ta thực thi lệnh:
+
+   ```bash
+   linux> gcc -Og -S mstore.c
+   ```
+
+ * để tạo ra tệp `mstore.s`. Nội dung đầy đủ của tệp này như sau:
+
+   ```bash
+           file "010-mstore.c"
+           .text
+           .globl multstore
+           .type multstore, @function
+   multstore:
+           pushq %rbx
+           movq %rdx, %rbx
+           call mult2
+           movq %rax, (%rbx)
+           popq %rbx
+           ret
+           .size multstore, .-multstore
+           .ident "GCC: (Ubuntu 4.8.1-2ubuntu1~12.04) 4.8.1"
+           .section .note.GNU-stack,"",@progbits
+   ```
+
+ * Tất cả các dòng bắt đầu bằng dấu ‘.’ đều là các **chỉ thị** (directives) dùng để hướng dẫn assembler và linker. Chúng ta thường có thể bỏ qua các dòng này. Mặt khác, trong mã hợp ngữ gốc không có các chú thích giải thích về việc các câu lệnh thực hiện công việc gì hoặc chúng liên hệ như thế nào với mã nguồn C ban đầu. Để trình bày mã hợp ngữ một cách rõ ràng hơn, chúng tôi sẽ hiển thị nó dưới một dạng thức lược bớt hầu hết các chỉ thị, đồng thời bổ sung thêm số thứ tự dòng và các chú thích giải thích. Đối với ví dụ của chúng ta, một phiên bản có chú thích sẽ xuất hiện như sau:
+   ```bash
+                   void multstore(long x, long y, long *dest)
+                   x in %rdi, y in %rsi, dest in %rdx
+                 1 multstore:
+                 2    pushq %rbx                   Save %rbx
+                 3    movq %rdx, %rbx              Copy dest to %rbx
+                 4    call mult2                   Call mult2(x, y)
+                 5    movq %rax, (%rbx)            Store result at *dest
+                 6    popq %rbx                    Restore %rbx
+                 7    ret                          Return
+   ```
+
+ * Chúng tôi thường chỉ hiển thị những dòng mã có liên quan đến vấn đề đang được thảo luận. Mỗi dòng đều được đánh số ở phía bên trái để tiện tham chiếu và được chú thích ở phía bên phải bằng một mô tả ngắn gọn về tác động của lệnh đó cũng như cách nó liên hệ với các phép toán trong đoạn mã nguồn C gốc. Đây là một phiên bản đã được cách điệu theo cách mà các lập trình viên sử dụng assembly language thường định dạng mã của họ.
+
+ * Chúng tôi cũng cung cấp các phần "Web asides" (phụ lục trên web) để bao hàm các tài liệu dành cho những người đặc biệt đam mê machine language. Một phụ lục trên web mô tả mã máy IA32. Khi đã có nền tảng về x86-64, việc học IA32 trở nên khá đơn giản. Một phụ lục khác trình bày ngắn gọn các cách để kết hợp mã hợp ngữ vào trong các chương trình C. Đối với một số ứng dụng, lập trình viên buộc phải "hạ cấp" xuống assembly code để truy cập vào các tính năng cấp thấp của máy tính. Một cách tiếp cận là viết toàn bộ các hàm bằng assembly code và kết hợp chúng với các hàm C trong giai đoạn liên kết (linking stage). Cách thứ hai là sử dụng tính năng hỗ trợ của `gcc` để nhúng assembly code trực tiếp vào bên trong các chương trình C.
+
+> [!Note]
+> **ATT verus Intel assembly code formats**
+> 
+> Trong phần trình bày của mình, chúng tôi sử dụng mã hợp ngữ ở định dạng **AT&T** (được đặt tên theo AT&T, công ty đã điều hành Phòng thí nghiệm Bell trong nhiều năm) — đây là định dạng mặc định cho `gcc`, `objdump` và các công cụ khác mà chúng ta sẽ xem xét. Các công cụ lập trình khác, bao gồm cả những công cụ từ Microsoft cũng như tài liệu từ Intel, lại hiển thị mã hợp ngữ theo **định dạng Intel**. Hai định dạng này khác biệt nhau ở một số điểm. Ví dụ, `gcc` có thể tạo ra mã theo định dạng Intel cho hàm multstore bằng cách sử dụng dòng lệnh:
+>
+>  ```bash
+>  linux> gcc -Og -S -nasm=intel mstore.c
+>  ```
+>
+> Dòng lệnh này cho ra đoạn assembly code như sau:
+>
+>  ```bash
+>  multstore:
+>    push    rbx
+>    mov     rbx, rdx
+>    call    mult2
+>    mov     QWORD PTR [rbx], rax
+>    pop     rbx
+>    ret
+>  ```
+>
+> Chúng ta thấy rằng định dạng Intel và AT&T khác nhau ở những điểm sau:
+>
+>  * **Định dạng Intel lược bỏ các hậu tố chỉ định kích thước**. Chúng ta thấy các lệnh như `push` và `mov` thay vì `pushq` và `movq`.
+>  *  **Định dạng Intel lược bỏ ký tự ‘%’** ở phía trước tên thanh ghi, sử dụng `rbx` thay vì `%rbx`.
+>  *  **Định dạng Intel có cách mô tả vị trí trong bộ nhớ khác biệt** — ví dụ: `QWORD PTR [rbx]` thay vì `(%rbx)`.
+>  *  **Các lệnh có nhiều toán hạng liệt kê chúng theo thứ tự ngược lại**. Điều này có thể gây rất nhiều nhầm lẫn khi chuyển đổi giữa hai định dạng.
+>
+> Mặc dù chúng tôi sẽ không sử dụng định dạng Intel trong phần trình bày của mình, nhưng bạn sẽ bắt gặp nó trong các tài liệu từ Intel và Microsoft.
+> 
+   
+   
+## 3.3 Data Formats (Định dạng dữ liệu)
+<br>
+
+ * Do nguồn gốc là kiến trúc 16-bit rồi mở rộng lên 32-bit, Intel sử dụng thuật ngữ 'word' (từ) để chỉ kiểu dữ liệu 16-bit. Dựa trên cơ sở đó, họ gọi các đại lượng 32-bit là 'double words' (từ kép) và các đại lượng 64-bit là 'quad words' (từ bốn). Hình 3.1 cho thấy các cách biểu diễn x86-64 được sử dụng cho các kiểu dữ liệu nguyên thủy của C. Các giá trị `int` tiêu chuẩn được lưu trữ dưới dạng 'double words' (32-bit). Các con trỏ (được hiển thị ở đây dưới dạng `char *`) được lưu trữ dưới dạng 'quad words' 8-byte, đúng như dự kiến trên một máy 64-bit. Với kiến trúc x86-64, kiểu dữ liệu `long` được triển khai với 64 bit, cho phép một dải giá trị rất rộng. Hầu hết các ví dụ mã nguồn trong chương này sử dụng các kiểu dữ liệu con trỏ và `long`, vì vậy chúng sẽ thao tác trên các 'quad words'. Tập lệnh x86-64 cũng bao gồm đầy đủ các lệnh cho byte, word và double word.
+
+ * Các số dấu phẩy động (floating-point) có hai định dạng chính: giá trị độ chính xác đơn (4-byte), tương ứng với kiểu dữ liệu `float` trong C, và giá trị độ chính xác kép (8-byte), tương ứng với kiểu dữ liệu `double` trong C. Các bộ vi xử lý trong dòng x86 trước đây đã triển khai tất cả các phép toán dấu phẩy động với định dạng dấu phẩy động 80-bit (10-byte) đặc biệt (xem Bài tập 2.86). Định dạng này có thể được chỉ định trong các chương trình C bằng cách sử dụng khai báo `long double`. Tuy nhiên, chúng tôi khuyên bạn không nên sử dụng định dạng này. Nó không có tính tương thích (portable) với các dòng máy khác và thường không được triển khai với phần cứng hiệu năng cao như các phép toán độ chính xác đơn và kép.
+
+ * |**C declaration**|**Intel data type**|**Assembly code suffix**|**Size(bytes)**|
+   |:--|:---|:---|:---|
+   |char|Byte|b|1|
+   |short|Word|w|2|
+   |int|Double word|l|4|
+   |long|Quad word|q|8|
+   |char *|Quad word|q|8|
+   |float|Single precision|s|4|
+   |double|Double precision|l|8
+
+   **Figure 3.1** Size of C data in x86_64. With a 64-bit machine, pointers are 8 bytes long.
+
+ * Như bảng ở Hình 3.1 chỉ ra, hầu hết các lệnh hợp ngữ do `gcc` tạo ra đều có một hậu tố (suffix) gồm một ký tự duy nhất biểu thị kích thước của toán hạng. Ví dụ, lệnh di chuyển dữ liệu có bốn biến thể: `movb` (di chuyển byte), `movw` (di chuyển word), `movl` (di chuyển double word) và `movq` (di chuyển quad word). Hậu tố 'l' được sử dụng cho double word, vì các đại lượng 32-bit được coi là "long words". Mã hợp ngữ sử dụng hậu tố 'l' để chỉ định một số nguyên 4-byte cũng như một số dấu phẩy động độ chính xác kép 8-byte. Điều này không gây ra bất kỳ sự mơ hồ nào, vì mã dấu phẩy động liên quan đến một tập hợp các lệnh và thanh ghi hoàn toàn khác biệt
+   
+   
+
+ * Như bảng ở Hình 3.1 chỉ ra, hầu hết các lệnh hợp ngữ do gcc tạo ra đều có một hậu tố (suffix) gồm một ký tự duy nhất biểu thị kích thước của toán hạng. Ví dụ, lệnh di chuyển dữ liệu có bốn biến thể: movb (di chuyển byte), movw (di chuyển word), movl (di chuyển double word) và movq (di chuyển quad word). Hậu tố 'l' được sử dụng cho double word, vì các đại lượng 32-bit được coi là "long words". Mã hợp ngữ sử dụng hậu tố 'l' để chỉ định một số nguyên 4-byte cũng như một số dấu phẩy động độ chính xác kép 8-byte. Điều này không gây ra bất kỳ sự mơ hồ nào, vì mã dấu phẩy động liên quan đến một tập hợp các lệnh và thanh ghi hoàn toàn khác biệt.
+
+## 3.4 Accessing Information (Truy cập thông tin)
+<br>
+
+ * Một bộ xử lý trung tâm (CPU) x86-64 chứa một tập hợp gồm 16 thanh ghi đa năng (general-purpose registers) dùng để lưu trữ các giá trị 64-bit. Các thanh ghi này được sử dụng để lưu trữ cả dữ liệu số nguyên lẫn các con trỏ (pointers). Hình 3.2 minh họa 16 thanh ghi này. Tên của tất cả chúng đều bắt đầu bằng ký tự `%r`, nhưng lại tuân theo nhiều quy ước đặt tên khác nhau do sự tiến hóa lịch sử của tập lệnh. Bộ vi xử lý 8086 đời đầu có tám thanh ghi 16-bit (hiển thị trong Hình 3.2 là từ `%ax` đến `%bp`). Mỗi thanh ghi này có một mục đích cụ thể, do đó chúng được đặt tên phản ánh cách thức sử dụng chúng. Với sự mở rộng lên IA32 (32-bit), các thanh ghi này được mở rộng thành 32-bit, được gắn nhãn từ `%eax` đến `%ebp`. Trong bước mở rộng tiếp theo lên x86-64 (64-bit), tám thanh ghi gốc này lại được mở rộng thành 64-bit, được gắn nhãn từ `%rax` đến `%rbp`. Ngoài ra, tám thanh ghi mới đã được thêm vào và chúng được đặt tên theo một quy ước mới: từ `%r8` đến `%r15`.
+
+ * <img width="611" height="716" alt="image" src="https://github.com/user-attachments/assets/440c8537-d6f1-432b-a227-119ed319cbc6" />
+
+
+ * Như các ô lồng nhau trong Hình 3.2 chỉ ra, các lệnh (instructions) có thể thao tác trên dữ liệu với kích thước khác nhau được lưu trữ trong các byte thấp của 16 thanh ghi này. Các thao tác cấp byte có thể truy cập vào byte có trọng số thấp nhất (least significant byte), các thao tác 16-bit có thể truy cập vào 2 byte thấp nhất, các thao tác 32-bit truy cập vào 4 byte thấp nhất, và các thao tác 64-bit có thể truy cập vào toàn bộ thanh ghi.
+
+ * Trong các phần sau, chúng tôi sẽ trình bày một số lệnh để sao chép và tạo ra các giá trị 1, 2, 4 và 8 byte. Khi các lệnh này có đích đến là thanh ghi, có hai quy ước nảy sinh về việc các byte còn lại trong thanh ghi sẽ như thế nào đối với các lệnh tạo ra ít hơn 8 byte: Những lệnh tạo ra dữ liệu 1 hoặc 2 byte sẽ giữ nguyên các byte còn lại của thanh ghi. Những lệnh tạo ra dữ liệu 4 byte sẽ đặt 4 byte cao của thanh ghi về 0. Quy ước thứ hai này được áp dụng như một phần của quá trình mở rộng từ IA32 lên x86-64.
+
+ * Như các chú thích dọc theo cạnh phải của Hình 3.2 chỉ ra, các thanh ghi khác nhau đóng những vai trò khác nhau trong các chương trình thông thường. Độc đáo nhất trong số đó là con trỏ ngăn xếp (stack pointer) %rsp, được sử dụng để chỉ vị trí cuối cùng của ngăn xếp thời gian chạy (run-time stack). Một số lệnh đọc và ghi vào thanh ghi này một cách đặc biệt. 15 thanh ghi còn lại có sự linh hoạt hơn trong cách sử dụng. Một số ít lệnh sử dụng cụ thể một vài thanh ghi nhất định. Quan trọng hơn, một tập hợp các quy ước lập trình tiêu chuẩn sẽ điều khiển cách sử dụng các thanh ghi để quản lý ngăn xếp, truyền tham số hàm, trả về giá trị từ hàm, và lưu trữ dữ liệu cục bộ hoặc tạm thời. Chúng tôi sẽ đề cập đến các quy ước này trong bài trình bày của mình, đặc biệt là trong Mục 3.7, nơi chúng tôi mô tả việc thực thi các thủ tục (procedures).
+
+### 3.4.1 Operand Specifiers
+<br>
+
+ * Hầu hết các câu lệnh đều có một hoặc nhiều toán hạng (operands) xác định các giá trị nguồn được sử dụng để thực hiện một thao tác và vị trí đích để đặt kết quả. Kiến trúc x86-64 hỗ trợ một số dạng toán hạng (xem Hình 3.3). Các giá trị nguồn có thể được cung cấp dưới dạng hằng số, hoặc được đọc từ thanh ghi (registers) hay bộ nhớ (memory). Kết quả có thể được lưu trữ trong thanh ghi hoặc bộ nhớ. Do đó, các khả năng toán hạng có thể được phân loại thành ba kiểu:
+   * Kiểu thứ nhất, tức thời (**immediate**): Dành cho các giá trị hằng số. Trong assembly code định dạng AT&T, chúng được viết bằng một dấu `$` theo sau là một số nguyên sử dụng ký hiệu chuẩn của ngôn ngữ C — ví dụ: `$-577` hoặc `$0x1F`. Các câu lệnh khác nhau cho phép các dải giá trị tức thời khác nhau; assembler sẽ tự động chọn cách mã hóa một giá trị sao cho nhỏ gọn nhất.
+   * Kiểu thứ hai, thanh ghi (**register**): Biểu thị nội dung của một thanh ghi, đó là một trong mười sáu phần bậc thấp (low-order portions) có kích thước 8, 4, 2, hoặc 1 byte của các thanh ghi, tương ứng dành cho các toán hạng có 64, 32, 16, hoặc 8 bit.
+ * Trong Hình 3.3, chúng tôi sử dụng ký hiệu ra để biểu thị một thanh ghi `a` bất kỳ và biểu thị giá trị của nó bằng tham chiếu `R[ra]`, xem tập hợp các thanh ghi như một mảng `R` được đánh chỉ số bởi các mã định danh thanh ghi (register identifiers).
+   * Kiểu thứ ba là tham chiếu bộ nhớ (**memory reference**), trong đó chúng ta truy cập vào một vị trí bộ nhớ nào đó dựa trên một địa chỉ được tính toán, thường được gọi là **địa chỉ hiệu dụng** (effective address). Vì chúng ta coi bộ nhớ như một mảng byte khổng lồ, chúng ta sử dụng ký hiệu $M_b[Addr]$ để biểu thị một tham chiếu đến giá trị $b$-byte được lưu trữ trong bộ nhớ bắt đầu tại địa chỉ $Addr$. Để đơn giản hóa vấn đề, chúng ta thường sẽ lược bỏ chỉ số dưới $b$.
+ * Như Hình 3.3 cho thấy, có nhiều chế độ định địa chỉ (addressing modes) khác nhau cho phép các dạng tham chiếu bộ nhớ khác nhau. Dạng tổng quát nhất được hiển thị ở cuối bảng với cú pháp $Imm(r_b, r_i, s)$. Một tham chiếu như vậy có bốn thành phần: một độ lệch tức thời (immediate offset) $Imm$, một thanh ghi cơ sở (base register) $r_b$, một thanh ghi chỉ số (index register) $r_i$, và một hệ số tỷ lệ (scale factor) $s$, trong đó $s$ bắt buộc phải là 1, 2, 4, hoặc 8. Cả thanh ghi cơ sở và thanh ghi chỉ số đều phải là các thanh ghi 64-bit. Địa chỉ hiệu dụng được tính toán theo công thức: $Imm + R[r_b] + R[r_i] \cdot s$. Dạng tổng quát này thường thấy khi tham chiếu đến các phần tử của mảng. Các dạng khác chỉ đơn giản là những trường hợp đặc biệt của dạng tổng quát này, trong đó một số thành phần được lược bỏ. Như chúng ta sẽ thấy, các chế độ định địa chỉ phức tạp hơn rất hữu ích khi tham chiếu đến các phần tử của mảng (array) và cấu trúc (structure).
+
+ * |**Type**|**Form**|**Operand value**|**Name**|
+   |:--|:--|:--|:--|
+   |Immediate|$_Imm_|$Imm$|Immadiate|
+   |Register|$r_a$|$M[R[r_a]]$|Register|
+   |Memory|$_Imm_|M[_Imm_]|Absolute|
+   |Memory|($r_a$)|$M[R[r_a]]$|Indirect|
+   |Memory|_Imm_($r_b$)|$M[Imm+R[r_b]$|Base + displacement|
+   |Memory|$(r_b,r_i)$|$M[R[r_b]+R[r_i]]$|Indexed|
+   |Memory|_Imm_$(r_b,r_i)$|$M[Imm+R[r_b]+R[r_i]]$|Indexed|
+   |Memory|$(,r_i,s)$|$M[R[r_i].s$|Scaled indexed|
+   |Memory|$Imm(,r_i,s)$|$M[Imm+R[r_i]].s$|Scaled indexed|
+   |Memory|$(r_b,r_i,s)$|$M[R[r+b]+R[r_i].s$|Scaled indexed|
+   |Memory|$Imm(r_b,r_i,s)$|$M[Imm+R[r_b]+R[r_i]].s$|Scaled indexed|
+
+   **Figure 3.3 Operand forms**. Operands can donote immediate(constant) values, register values, or values from memory. The scaling factor _s_ must be either 1,2,4, or 8.
+
+* **Practice Problem 3.1**
+
+  Giả sử các giá trị sau đây được lưu trữ tại memory addresses và registers được chỉ định:
+
+  |Address|Value|Register|Value|
+  |:--:|:--:|:--:|:--:|
+  |0x100|0xff|%rax|0x100|
+  |0x104|0xab|%rcx|0x1|
+  |0x108|0x13|%rdx|0x3|
+  |0x10c|0x11|
+
+  Điền vào bảng sau để hiện thị các giá trị tương ứng cho các operands được chỉ định:
+
+  |Operand|Value|
+  |:--:|:--:|
+  |%rax|0x100|
+  |||
+   
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
 ## Control (Điều khiển)
