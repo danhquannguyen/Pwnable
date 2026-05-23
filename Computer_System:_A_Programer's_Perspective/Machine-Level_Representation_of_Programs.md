@@ -443,25 +443,109 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 
   Mỗi dòng mã lệnh dưới đây đều phát sinh một thông báo lỗi khi chúng ta gọi trình dịch hợp ngữ (assembler). Hãy giải thích lỗi sai của từng dòng.
 
-  ```asm
-  movb $0xf, (%ebx)          Lỗi sai kích thước thanh ghi làm con trỏ bộ nhớ: Trong kiến trúc x86_64 (64-                                bit), địa chỉ bộ nhớ là 64-bit nên bắt buộc phải dùng thanh ghi 64-bit để trỏ                               (%rbx). Việc dùng (%ebx) là sai vì thanh ghi 32-bit không thể đại diện cho một
-                             địa chỉ bộ nhớ 64-bit.
+  ```text
+  movb $0xf, (%ebx)          Lỗi sai kích thước thanh ghi làm con trỏ bộ nhớ: Trong kiến trúc x86_64 (64-bit), địa chỉ bộ nhớ là 64-bit nên bắt buộc phải dùng thanh ghi 64-bit để trỏ (%rbx). Việc dùng (%ebx) là sai vì thanh ghi 32-bit không thể đại diện cho một địa chỉ bộ nhớ 64-bit.
 
-  movl %rax, (%rsp)          Lỗi sai kích thước dữ liệu truyền đi: Lệnh movl yêu cầu di chuyển dữ liệu 32-                               bit, nhưng thanh ghi nguồn %rax lại là thanh ghi 64-bit. Kích thước lệnh và                                 thanh ghi nguồn không khớp nhau.
+  movl %rax, (%rsp)          Lỗi sai kích thước dữ liệu truyền đi: Lệnh movl yêu cầu di chuyển dữ liệu 32- bit, nhưng thanh ghi nguồn %rax lại là thanh ghi 64-bit. Kích thước lệnh và thanh ghi nguồn không khớp nhau.
   
-  movw (%rax), 4(%rsp)       Lỗi di chuyển trực tiếp từ bộ nhớ sang bộ nhớ (Memory-to-Memory): Kiến trúc                                 x86_64 không cho phép một câu lệnh mov có cả toán hạng nguồn (%rax) và toán                                 hạng đích 4(%rsp) đều là ô nhớ [1]. Phần cứng CPU không hỗ trợ luồng xử lý này                              trong cùng một chu kỳ lệnh.
+  movw (%rax), 4(%rsp)       Lỗi di chuyển trực tiếp từ bộ nhớ sang bộ nhớ (Memory-to-Memory): Kiến trúc x86_64 không cho phép một câu lệnh mov có cả toán hạng nguồn (%rax) và toán hạng đích 4(%rsp) đều là ô nhớ [1]. Phần cứng CPU không hỗ trợ luồng xử lý này trong cùng một chu kỳ lệnh.
 
   movb %al, %sl              Không có register sl
   
-  movq %rax, $0x123          Lỗi ghi dữ liệu vào hằng số: Trong cú pháp AT&T, thứ tự là mov nguồn, đích.                                 Câu lệnh này đang cố gắng ghi giá trị của thanh ghi %eax vào hằng số $0x123.                                Hằng số là một giá trị cố định được nạp trực tiếp từ mã máy, không phải là một                              ô nhớ hay thanh ghi nên không thể bị ghi đè dữ liệu vào
+  movq %rax, $0x123          Lỗi ghi dữ liệu vào hằng số: Trong cú pháp AT&T, thứ tự là mov nguồn, đích. Câu lệnh này đang cố gắng ghi giá trị của thanh ghi %eax vào hằng số $0x123. Hằng số là một giá trị cố định được nạp trực tiếp từ mã máy, không phải là một ô nhớ hay thanh ghi nên không thể bị ghi đè dữ liệu vào
   
-  movl %eax, %dx             Lỗi kích thước toán hạng đích không phù hợp: Thanh ghi nguồn %eax có kích                                   thước 4 bytes (32-bit), trong khi thanh ghi đích %dx chỉ chứa được tối đa 2                                 bytes (16-bit). Bạn không thể nhét một dữ liệu lớn vào một thanh ghi đích có                                kích thước nhỏ hơn.
+  movl %eax, %dx             Lỗi kích thước toán hạng đích không phù hợp: Thanh ghi nguồn %eax có kích thước 4 bytes (32-bit), trong khi thanh ghi đích %dx chỉ chứa được tối đa 2 bytes (16-bit). Bạn không thể nhét một dữ liệu lớn vào một thanh ghi đích có kích thước nhỏ hơn.
   
-  movb %si, 8(%rbp)          Lỗi lệch kích thước giữa lệnh và thanh ghi nguồn: Hậu tố b của lệnh movb quy                                định di chuyển dữ liệu kích thước 1 byte (8-bit), nhưng thanh ghi nguồn %si                                 lại là thanh ghi 2 bytes (16-bit). Định danh thanh ghi và lệnh không đồng bộ                                với nhau.
+  movb %si, 8(%rbp)          Lỗi lệch kích thước giữa lệnh và thanh ghi nguồn: Hậu tố b của lệnh movb quy định di chuyển dữ liệu kích thước 1 byte (8-bit), nhưng thanh ghi nguồn %si lại là thanh ghi 2 bytes (16-bit). Định danh thanh ghi và lệnh không đồng bộ với nhau.
   ```
 
-  
-  
+### 3.4.3 Data Movement Example
+<br>
+
+* Như một ví dụ về đoạn mã sử dụng các lệnh di chuyển dữ liệu, hãy xem xét thủ tục hoán đổi dữ liệu (data exchange routine) được hiển thị trong Hình 3.7, dưới cả hai dạng: mã C và mã hợp ngữ (assembly code) được tạo ra bởi `gcc`.
+* <img width="516" height="320" alt="image" src="https://github.com/user-attachments/assets/469d76d0-7227-47a2-9cd8-6cf5043ee6c3" />
+
+* Như Hình 3.7(b) cho thấy, hàm exchange được thực thi chỉ với ba câu lệnh: hai lệnh di chuyển dữ liệu (movq) cộng với một lệnh để quay trở lại vị trí mà từ đó hàm được gọi (ret). Chúng ta sẽ đề cập đến các chi tiết về cơ chế gọi và trả về của hàm trong Mục 3.7. Từ giờ cho đến lúc đó, bạn chỉ cần biết rằng các đối số (arguments) được truyền vào các hàm thông qua các thanh ghi (registers). Đoạn mã hợp ngữ có chú thích của chúng tôi đã ghi chú rõ những điều này. Một hàm trả về một giá trị bằng cách lưu trữ giá trị đó trong thanh ghi %rax, hoặc trong một trong các phần bậc thấp (low-order portions) của thanh ghi này."
+* Khi hàm bắt đầu thực thi, các tham số của hàm là `xp` và `y` được lưu trữ tương ứng trong các thanh ghi `%rdi` và `%rsi`. Câu lệnh thứ 2 sau đó đọc `x` từ bộ nhớ và lưu giá trị đó vào thanh ghi `%rax`, đây là một bước triển khai trực tiếp cho phép toán `x = *xp` trong chương trình C. Về sau, thanh ghi `%rax` sẽ được sử dụng để trả về một giá trị từ hàm, và do đó giá trị trả về sẽ là `x`. Câu lệnh thứ 3 ghi `y` vào vị trí bộ nhớ được chỉ định bởi `xp` nằm trong thanh ghi `%rdi`, một bước triển khai trực tiếp cho phép toán `*xp` = `y`. Ví dụ này minh họa cách các lệnh `mov` có thể được sử dụng để đọc từ bộ nhớ vào thanh ghi (dòng 2), và ghi từ thanh ghi ra bộ nhớ (dòng 3).
+* Có hai đặc điểm về đoạn assembly code này rất đáng chú ý. Thứ nhất, chúng ta thấy rằng những gì chúng ta gọi là "con trỏ" (pointers) trong C thực chất chỉ là các địa chỉ. Việc giải tham chiếu (dereferencing) một con trỏ bao gồm việc sao chép con trỏ đó vào một thanh ghi, và sau đó sử dụng thanh ghi này trong một tham chiếu bộ nhớ. Thứ hai, các biến cục bộ (local variables) như `x` thường được giữ trong các thanh ghi thay vì được lưu trữ tại các vị trí bộ nhớ. Việc truy cập thanh ghi nhanh hơn rất nhiều so với truy cập bộ nhớ.
+
+* **Practice Problem 3.4**
+
+  Giả sử các biến sp và dp được khai báo với các kiểu sau:
+
+  ```c
+  src_t *sp;
+  dest_t *dp;
+  ```
+
+  trong đó `src_t` và `dest_t` là các kiểu dữ liệu được khai báo bằng `typedef`. Chúng ta muốn sử dụng một cặp lệnh di chuyển dữ liệu (data movement instructions) phù hợp để thực hiện phép toán:
+
+  ```c
+  *dp = (dest_t) *sp;
+  ```
+
+  Giả sử rằng giá trị của `sp` và `dp` được lưu trữ tương ứng trong các thanh ghi `%rdi` và `%rsi`. Đối với mỗi mục trong bảng, hãy viết ra hai câu lệnh thực hiện việc di chuyển dữ liệu được chỉ định.
+  Câu lệnh đầu tiên trong chuỗi phải đọc dữ liệu từ bộ nhớ, thực hiện thao tác chuyển đổi phù hợp, và gán giá trị cho một phần tương ứng của thanh ghi `%rax`. Câu lệnh thứ hai sau đó sẽ ghi phần tương ứng của `%rax` ra bộ nhớ. Trong cả hai trường hợp, các phần của thanh ghi có thể là `%rax`, `%eax`, `%ax`, hoặc `%al`, và chúng có thể khác nhau ở hai lệnh này.
+  Hãy nhớ lại rằng khi thực hiện một phép ép kiểu (cast) liên quan đến cả việc thay đổi kích thước (size) và thay đổi "tính có dấu/không dấu" (signedness) trong C, phép toán phải ưu tiên thay đổi kích thước trước (xem Mục 2.2.6).
+
+  |src_t|dest_t|Instruction|
+  |:--|:--|:--|
+  |long|long|movq (%rdi), %rax|
+  |||movq %rax, (%rsi)|
+  |char|int|movsbl (%rdi), %eax|
+  |||movl %eax, (%rsi)|
+  |char|unsigned|movzbw (%rdi), %eax|
+  |||movl %eax, (%rsi)|
+  |unsigned char|long|movzbl (%rdi), %rax|
+  |||movl %eax, (%rsi)|
+  |int|char|movl (%rdi), %eax|
+  |||movb %al, (%rsi)|
+  |unsigned|unsigned char|movl (%rdi), %eax|
+  |||movb %al, (%rsi)|
+  |char|short|movsbw (%rdi), %ax|
+  |||movw %ax, (%rsi)|
+
+  Quy tắc cốt lõi:
+   * Quy tắc ép kiểu(casting rule): Khi ép kiểu liên quan đến cả việc thay đổi kích thước và tính có dấu/ không dấu, phải thay đổi kích thước trước.
+   * Quy tắc thu hẹp(truncation rule): Khi ép kiểu từ kiểu lớn xuống kiểu nhỏ, ta chỉ cần đọc dữ liệu vào thanh ghi, sau đó ghi phần thanh ghi nhỏ (bậc thấp) tương ứng ra bộ nhớ. 
+
+
+* **Practice Problem 3.5**
+
+  Bạn được cung cấp các thông tin sau. Một hàm với nguyên mẫu
+
+  ```c
+  void decode1(long *xp, long *yp, long *zp);
+  ```
+  được biên dịch sang assembly code, thu được kết quả như sau:
+
+  ```asm
+     void decode1(long *xp, long *yp, long *zp)
+     xp in %rdi, yp in %rsi, zp in %rdx
+
+  decode1:
+    movq (%rdi), %r8
+    movq (%rsi), %rcx
+    movq (%rdx), %rax
+    movq %r8, (%rsi)
+    movq %rcx, (%rdx)
+    movq %rax, (%rdi)
+    ret
+  ```
+
+  Các tham số xp, yp, và zp được lưu trữ lần lượt trong các thanh ghi %rdi, %rsi, và %rdx.
+
+  Hãy viết mã C cho hàm decode1 sao cho nó có tác dụng tương đương với đoạn assembly code đã cho.
+
+  ```c
+  void decode1(long *xp, long *yp, long *zp){
+     long tmp1 = *xp;
+     long tmp2 = *yp;
+     long tmp3 = *zp;
+     *yp = tmp1;
+     *zp = tmp2;
+     *xp = tmp3;
+  }
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
 ## Control (Điều khiển)
@@ -472,7 +556,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 
 ## Heterogeneous Data Structures (Cấu trúc dữ liệu hỗn hợp)
 
-## Combining Control and Data in Machine-Level Programs (Kết hợp điều khiển và dữ liệu trong chương trình cấp độ máy
+## Combining Control and Data in Machine-Level Programs (Kết hợp điều khiển và dữ liệu trong chương trình cấp độ máy )
 
 ## Floating-Point Code (Mã lệnh số thực dấu phẩy động)
 
