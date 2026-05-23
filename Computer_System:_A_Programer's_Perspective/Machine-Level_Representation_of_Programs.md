@@ -363,7 +363,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
    |Memory|_Imm_$(r_b,r_i)$|$M[Imm+R[r_b]+R[r_i]]$|Indexed|
    |Memory|$(,r_i,s)$|$M[R[r_i].s]$|Scaled indexed|
    |Memory|$Imm(,r_i,s)$|$M[Imm+R[r_i]].s]$|Scaled indexed|
-   |Memory|$(r_b,r_i,s)$|$M[R[r+b]+R[r_i].s]$|Scaled indexed|
+   |Memory|$(r_b,r_i,s)$|$M[R[r_b]+R[r_i].s]$|Scaled indexed|
    |Memory|$Imm(r_b,r_i,s)$|$M[Imm+R[r_b]+R[r_i]].s]$|Scaled indexed|
 
    **Figure 3.3 Operand forms**. Operands can donote immediate(constant) values, register values, or values from memory. The scaling factor _s_ must be either 1,2,4, or 8.
