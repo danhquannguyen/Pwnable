@@ -406,11 +406,11 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
  * Các ví dụ về lệnh `mov` sau đây minh họa năm tổ hợp có thể có của các kiểu **toán hạng nguồn** (source) và toán hạng đích (destination). Hãy nhớ rằng toán hạng nguồn luôn đứng trước và toán hạng đích đứng sau
 
    ```bash
-   1 movl $0x4050,%eax Immediate--Register, 4 bytes
-   2 movw %bp,%sp Register--Register, 2 bytes
-   3 movb (%rdi,%rcx),%al Memory--Register, 1 byte
-   4 movb $-17,(%esp) Immediate--Memory, 1 byte
-   5 movq %rax,-12(%rbp) Register--Memory, 8 bytes
+   1 movl $0x4050,%eax        Immediate--Register, 4 bytes
+   2 movw %bp,%sp             Register--Register, 2 bytes
+   3 movb (%rdi,%rcx),%al     Memory--Register, 1 byte
+   4 movb $-17,(%esp)         Immediate--Memory, 1 byte
+   5 movq %rax,-12(%rbp)      Register--Memory, 8 bytes
    ```
 
  * Lệnh cuối cùng được ghi lại trong Hình 3.4 dùng để xử lý dữ liệu tức thời 64-bit (64-bit immediate data). Lệnh `movq` thông thường chỉ có thể nhận các toán hạng nguồn tức thời có thể được biểu diễn dưới dạng số bù hai 32-bit (32-bit two’s-complement numbers). Giá trị này sau đó sẽ được **mở rộng dấu** (sign extended) để tạo ra giá trị 64-bit cho đích đến. Trong khi đó, lệnh `movabsq` có thể nhận một giá trị tức thời 64-bit tùy ý làm toán hạng nguồn và chỉ có thể dùng một thanh ghi (register) làm đích đến.
@@ -431,7 +431,13 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
    Đối với mỗi dòng mã hợp ngữ (assembly language) dưới đây, hãy xác định hậu tố lệnh (instruction suffix) phù hợp dựa trên các toán hạng (operands) của nó. (Ví dụ: lệnh mov có thể được viết lại thành movb, movw, movl, hoặc movq.)
 
    ```asm
-   mov 
+   movl  %eax, (%rsp)
+   movb  (%rax), %dx
+   movb  $0xFF, %bl
+   movb  (%rsp,%rdx,4), %dl
+   movq  (%rdx), %rax
+   movb  %dx, (%rax)
+   ```
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
 ## Control (Điều khiển)
