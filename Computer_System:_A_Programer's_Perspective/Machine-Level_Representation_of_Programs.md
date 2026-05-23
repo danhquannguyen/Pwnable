@@ -358,7 +358,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
    |Register|$r_a$|$M[R[r_a]]$|Register|
    |Memory|$Imm$|$M[Imm]$|Absolute|
    |Memory|($r_a$)|$M[R[r_a]]$|Indirect|
-   |Memory|_Imm_($r_b$)|$M[Imm+R[r_b]$|Base + displacement|
+   |Memory|_Imm_($r_b$)|$M[Imm+R[r_b]]$|Base + displacement|
    |Memory|$(r_b,r_i)$|$M[R[r_b]+R[r_i]]$|Indexed|
    |Memory|_Imm_$(r_b,r_i)$|$M[Imm+R[r_b]+R[r_i]]$|Indexed|
    |Memory|$(,r_i,s)$|$M[R[r_i].s]$|Scaled indexed|
@@ -384,14 +384,14 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
   |Operand|Value|
   |:--:|:--:|
   |%rax|0x100|
-  |0x104||
-  |$0x108||
-  |(%rax)||
-  |4(%rax)||
-  |9(%rax,%rbx)||
-  |260(%rcx,%rdx)||
-  |0xfc(,%rcx,4)||
-  |(%rax,%rdx,4)||
+  |0x104|0xab|
+  |$0x108|0x108|
+  |(%rax)|0xff|
+  |4(%rax)|0x11|
+  |9(%rax,%rdx)|0x11|
+  |260(%rcx,%rdx)|0x13|
+  |0xfc(,%rcx,4)|0xff|
+  |(%rax,%rdx,4)|0xab|
    
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
