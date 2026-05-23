@@ -432,11 +432,11 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 
    ```asm
    movl  %eax, (%rsp)
-   movb  (%rax), %dx
+   movw  (%rax), %dx
    movb  $0xFF, %bl
    movb  (%rsp,%rdx,4), %dl
    movq  (%rdx), %rax
-   movb  %dx, (%rax)
+   movw  %dx, (%rax)
    ```
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
