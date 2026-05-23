@@ -384,7 +384,14 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
   |Operand|Value|
   |:--:|:--:|
   |%rax|0x100|
-  |||
+  |0x104||
+  |$0x108||
+  |(%rax)||
+  |4(%rax)||
+  |9(%rax,%rbx)||
+  |260(%rcx,%rdx)||
+  |0xfc(,%rcx,4)||
+  |(%rax,%rdx,4)||
    
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
