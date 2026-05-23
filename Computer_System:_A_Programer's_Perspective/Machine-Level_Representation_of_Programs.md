@@ -387,12 +387,51 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
   |0x104|0xab|
   |$0x108|0x108|
   |(%rax)|0xff|
-  |4(%rax)|0x11|
+  |4(%rax)|0xab|
   |9(%rax,%rdx)|0x11|
   |260(%rcx,%rdx)|0x13|
   |0xfc(,%rcx,4)|0xff|
   |(%rax,%rdx,4)|0xab|
+
+
+ ### 3.4.2 Data Movement Instructions
+<br>
+
+ * Trong số các lệnh được sử dụng nhiều nhất là những lệnh sao chép dữ liệu từ một vị trí này sang một vị trí khác. Tính tổng quát của ký hiệu toán hạng cho phép một lệnh di chuyển dữ liệu đơn giản thể hiện một loạt các khả năng, điều mà ở nhiều hệ thống máy tính khác sẽ đòi hỏi nhiều lệnh khác biệt nhau. Chúng tôi sẽ trình bày một số lệnh di chuyển dữ liệu khác nhau, phân biệt dựa trên kiểu nguồn và đích của chúng, các phép chuyển đổi mà chúng thực hiện, cũng như các tác dụng phụ khác mà chúng có thể gây ra. Trong phần trình bày của mình, chúng tôi phân nhóm nhiều lệnh khác nhau thành các **lớp lệnh** (instruction classes), trong đó các lệnh trong cùng một lớp thực hiện cùng một thao tác nhưng với kích thước toán hạng khác nhau.
+
+ * Hình 3.4 liệt kê dạng đơn giản nhất của các lệnh di chuyển dữ liệu — `mov`. Những lệnh này sao chép dữ liệu từ một vị trí nguồn đến một vị trí đích mà không thực hiện bất kỳ sự biến đổi nào. Lớp này bao gồm bốn lệnh: `movb`, `movw`, `movl` và `movq`. Cả bốn lệnh này đều mang lại hiệu ứng tương tự nhau; chúng khác biệt chủ yếu ở chỗ chúng thao tác trên các dữ liệu có kích thước khác nhau: tương ứng là 1, 2, 4 và 8 byte.
+ * <img width="407" height="193" alt="image" src="https://github.com/user-attachments/assets/0da0e23f-39d0-477c-b5c6-ace32d24e51d" />
+
+ * **Toán hạng nguồn** (source operand) chỉ định một giá trị có thể là dạng tức thời (immediate), được lưu trữ trong một thanh ghi (register), hoặc được lưu trữ trong bộ nhớ (memory). Toán hạng đích (destination operand) chỉ định một vị trí có thể là một thanh ghi hoặc một địa chỉ bộ nhớ. Kiến trúc x86-64 áp đặt một hạn chế là: move instruction **không thể có cả hai toán hạng cùng tham chiếu đến các vị trí bộ nhớ**. Việc sao chép một giá trị từ một vị trí bộ nhớ này sang một vị trí bộ nhớ khác đòi hỏi phải dùng đến hai câu lệnh — lệnh thứ nhất để tải (load) giá trị nguồn vào một thanh ghi, và lệnh thứ hai để ghi (write) giá trị của thanh ghi này vào đích đến. Tham chiếu đến Hình 3.2, các toán hạng thanh ghi cho những lệnh này có thể là các phần được gắn nhãn của bất kỳ thanh ghi nào trong số 16 thanh ghi, trong đó **kích thước của thanh ghi phải khớp với kích thước được chỉ định bởi ký tự cuối cùng của lệnh** (‘b’, ‘w’, ‘l’, hoặc ‘q’). Trong hầu hết các trường hợp, lệnh `mov` sẽ chỉ cập nhật đúng các byte thanh ghi hoặc các vị trí bộ nhớ cụ thể được chỉ định bởi toán hạng đích. **Ngoại lệ duy nhất** là khi lệnh movl có đích đến là một thanh ghi, nó cũng sẽ thiết lập 4 byte bậc cao (high-order 4 bytes) của thanh ghi đó về `0`. Ngoại lệ này bắt nguồn từ một quy ước được áp dụng trong x86-64, đó là bất kỳ lệnh nào tạo ra giá trị 32-bit cho một thanh ghi thì cũng đều tự động thiết lập phần bậc cao của thanh ghi đó về `0`.
+ * Các ví dụ về lệnh `mov` sau đây minh họa năm tổ hợp có thể có của các kiểu **toán hạng nguồn** (source) và toán hạng đích (destination). Hãy nhớ rằng toán hạng nguồn luôn đứng trước và toán hạng đích đứng sau
+
+   ```bash
+   1 movl $0x4050,%eax Immediate--Register, 4 bytes
+   2 movw %bp,%sp Register--Register, 2 bytes
+   3 movb (%rdi,%rcx),%al Memory--Register, 1 byte
+   4 movb $-17,(%esp) Immediate--Memory, 1 byte
+   5 movq %rax,-12(%rbp) Register--Memory, 8 bytes
+   ```
+
+ * Lệnh cuối cùng được ghi lại trong Hình 3.4 dùng để xử lý dữ liệu tức thời 64-bit (64-bit immediate data). Lệnh `movq` thông thường chỉ có thể nhận các toán hạng nguồn tức thời có thể được biểu diễn dưới dạng số bù hai 32-bit (32-bit two’s-complement numbers). Giá trị này sau đó sẽ được **mở rộng dấu** (sign extended) để tạo ra giá trị 64-bit cho đích đến. Trong khi đó, lệnh `movabsq` có thể nhận một giá trị tức thời 64-bit tùy ý làm toán hạng nguồn và chỉ có thể dùng một thanh ghi (register) làm đích đến.
+
+ * <img width="521" height="200" alt="image" src="https://github.com/user-attachments/assets/2cf3747c-1ec3-4c35-9f27-b96ae475e2ea" />
+ 
+ * Hình 3.5 và 3.6 ghi nhận hai lớp lệnh di chuyển dữ liệu được sử dụng khi **sao chép một giá trị nguồn nhỏ hơn vào một đích đến lớn hơn**. Tất cả các lệnh này sao chép dữ liệu từ một nguồn (có thể là một thanh ghi hoặc được lưu trữ trong bộ nhớ) đến một đích đến bắt buộc phải là thanh ghi.
+   * Các lệnh trong lớp `movz` sẽ lấp đầy các byte còn lại của đích đến bằng các số 0 (mở rộng bằng 0 - zero extension).
+   * Các lệnh trong lớp `movs` sẽ lấp đầy các byte còn lại bằng cách mở rộng dấu (sign extension), tức là sao chép lặp lại bit có trọng số cao nhất (most significant bit) của toán hạng nguồn.
+ * Hãy quan sát rằng mỗi tên lệnh đều có các ký tự chỉ định kích thước ở hai ký tự cuối cùng — ký tự đầu tiên chỉ định kích thước nguồn (source size), và ký tự thứ hai chỉ định kích thước đích (destination size). Như có thể thấy, có ba lệnh trong mỗi lớp này, bao trùm tất cả các trường hợp nguồn có kích thước 1 và 2 byte, và đích có kích thước 2 và 4 byte (tất nhiên chỉ xem xét các trường hợp đích có kích thước lớn hơn nguồn).
+ * <img width="574" height="262" alt="image" src="https://github.com/user-attachments/assets/d3bcbabf-fca6-4320-bfaf-be336edbd5ca" />
+
+ * Hãy lưu ý sự vắng mặt của một lệnh cụ thể dùng để mở rộng bằng số 0 (zero-extend) một giá trị nguồn 4 byte vào một đích đến 8 byte trong Hình 3.5. Theo logic, một lệnh như vậy sẽ được đặt tên là `movzlq`, nhưng lệnh này không hề tồn tại. Thay vào đó, kiểu di chuyển dữ liệu này có thể được thực hiện bằng cách sử dụng một lệnh `movl` với đích đến là một thanh ghi. Kỹ thuật này tận dụng một thuộc tính: bất kỳ lệnh nào tạo ra giá trị 4 byte với đích đến là một thanh ghi sẽ tự động lấp đầy 4 byte cao (upper 4 bytes) bằng các số 0. Mặt khác, đối với các đích đến 64-bit, thao tác di chuyển kèm mở rộng dấu (sign extension) được hỗ trợ cho cả ba loại kích thước nguồn (1, 2, và 4 byte), còn di chuyển kèm mở rộng bằng số 0 chỉ được hỗ trợ cho hai loại kích thước nguồn nhỏ hơn (1 và 2 byte).
+ * Hình 3.6 cũng ghi nhận lệnh `cltq`. Lệnh này không có toán hạng (operands) nào — nó luôn luôn sử dụng thanh ghi `%eax` làm nguồn và `%rax` làm đích đến cho kết quả đã được mở rộng dấu. Do đó, nó mang lại kết quả hoàn toàn giống hệt với lệnh `movslq %eax, %rax`, nhưng lại có mã hóa (encoding) nhỏ gọn hơn.
+
+ * **Practice Problem 3.2**
    
+   Đối với mỗi dòng mã hợp ngữ (assembly language) dưới đây, hãy xác định hậu tố lệnh (instruction suffix) phù hợp dựa trên các toán hạng (operands) của nó. (Ví dụ: lệnh mov có thể được viết lại thành movb, movw, movl, hoặc movq.)
+
+   ```asm
+   mov 
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
 ## Control (Điều khiển)
