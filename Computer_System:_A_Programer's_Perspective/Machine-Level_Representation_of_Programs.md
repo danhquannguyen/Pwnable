@@ -438,6 +438,30 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
    movq  (%rdx), %rax
    movw  %dx, (%rax)
    ```
+
+* **Practice Problem 3.3**
+
+  Mỗi dòng mã lệnh dưới đây đều phát sinh một thông báo lỗi khi chúng ta gọi trình dịch hợp ngữ (assembler). Hãy giải thích lỗi sai của từng dòng.
+
+  ```asm
+  movb $0xf, (%ebx)          Lỗi sai kích thước thanh ghi làm con trỏ bộ nhớ: Trong kiến trúc x86_64 (64-                                bit), địa chỉ bộ nhớ là 64-bit nên bắt buộc phải dùng thanh ghi 64-bit để trỏ                               (%rbx). Việc dùng (%ebx) là sai vì thanh ghi 32-bit không thể đại diện cho một
+                             địa chỉ bộ nhớ 64-bit.
+
+  movl %rax, (%rsp)          Lỗi sai kích thước dữ liệu truyền đi: Lệnh movl yêu cầu di chuyển dữ liệu 32-                               bit, nhưng thanh ghi nguồn %rax lại là thanh ghi 64-bit. Kích thước lệnh và                                 thanh ghi nguồn không khớp nhau.
+  
+  movw (%rax), 4(%rsp)       Lỗi di chuyển trực tiếp từ bộ nhớ sang bộ nhớ (Memory-to-Memory): Kiến trúc                                 x86_64 không cho phép một câu lệnh mov có cả toán hạng nguồn (%rax) và toán                                 hạng đích 4(%rsp) đều là ô nhớ [1]. Phần cứng CPU không hỗ trợ luồng xử lý này                              trong cùng một chu kỳ lệnh.
+
+  movb %al, %sl              Không có register sl
+  
+  movq %rax, $0x123          Lỗi ghi dữ liệu vào hằng số: Trong cú pháp AT&T, thứ tự là mov nguồn, đích.                                 Câu lệnh này đang cố gắng ghi giá trị của thanh ghi %eax vào hằng số $0x123.                                Hằng số là một giá trị cố định được nạp trực tiếp từ mã máy, không phải là một                              ô nhớ hay thanh ghi nên không thể bị ghi đè dữ liệu vào
+  
+  movl %eax, %dx             Lỗi kích thước toán hạng đích không phù hợp: Thanh ghi nguồn %eax có kích                                   thước 4 bytes (32-bit), trong khi thanh ghi đích %dx chỉ chứa được tối đa 2                                 bytes (16-bit). Bạn không thể nhét một dữ liệu lớn vào một thanh ghi đích có                                kích thước nhỏ hơn.
+  
+  movb %si, 8(%rbp)          Lỗi lệch kích thước giữa lệnh và thanh ghi nguồn: Hậu tố b của lệnh movb quy                                định di chuyển dữ liệu kích thước 1 byte (8-bit), nhưng thanh ghi nguồn %si                                 lại là thanh ghi 2 bytes (16-bit). Định danh thanh ghi và lệnh không đồng bộ                                với nhau.
+  ```
+
+  
+  
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
 ## Control (Điều khiển)
