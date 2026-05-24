@@ -610,8 +610,19 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
  * Cột thứ ba của Hình 3.9 minh họa kết quả của việc thực thi lệnh `popq %rdx` ngay sau khi đã thực hiện lệnh `pushq`. Giá trị `0x123` được đọc từ bộ nhớ và ghi vào thanh ghi `%rdx`. Con trỏ ngăn xếp `%rsp` được tăng trở lại giá trị `0x108`. Như được thể hiện trong hình, giá trị `0x123` vẫn còn nằm tại vị trí bộ nhớ `0x104` cho đến khi nó bị ghi đè (ví dụ: bởi một thao tác push khác). Tuy nhiên, đỉnh của ngăn xếp luôn được coi là địa chỉ do %rsp chỉ định.
  * Vì ngăn xếp được chứa trong cùng vùng bộ nhớ với mã chương trình và các dạng dữ liệu chương trình khác, nên các chương trình có thể truy cập vào các vị trí tùy ý bên trong ngăn xếp bằng cách sử dụng các phương thức định địa chỉ bộ nhớ tiêu chuẩn. Ví dụ, giả sử phần tử nằm trên cùng của ngăn xếp là một `quad word` (8 byte), thì lệnh `movq 8(%rsp), %rdx` sẽ sao chép `quad word` thứ hai từ ngăn xếp vào thanh ghi `%rdx`.
 
-## Arithmetic and Logical Operations (Các phép toán số học và logic)
+## 3.5 Arithmetic and Logical Operations (Các phép toán số học và logic)
+<br>
 
+ * Hình 3.10 liệt kê một số lệnh tính toán số học và logic của x86-64. Hầu hết các thao tác này được đưa ra dưới dạng các lớp lệnh (instruction classes), vì chúng có thể có các biến thể khác nhau với kích thước toán hạng khác nhau. (Chỉ riêng lệnh `leaq` là không có các biến thể kích thước khác). Ví dụ, lớp lệnh `add` bao gồm bốn lệnh cộng: `addb`, `addw`, `addl`, và `addq`, lần lượt thực hiện cộng trên các đơn vị dữ liệu là byte, word (2 byte), double word (4 byte) và quad word (8 byte). Thực tế, mỗi lớp lệnh được hiển thị đều có các lệnh để vận hành trên bốn kích thước dữ liệu khác nhau này. Các thao tác này được chia thành bốn nhóm: `tải địa chỉ hiệu dụng` (load effective address), `toán tử một ngôi` (unary), `toán tử hai ngôi` (binary), và `dịch bit` (shifts). Các thao tác hai ngôi có hai toán hạng, trong khi các thao tác một ngôi chỉ có một toán hạng. Các toán hạng này được xác định bằng cách sử dụng cùng một ký hiệu (notation) như đã mô tả trong Mục 3.4
+
+### 3.5.1 Load Effective Address
+<br>
+
+ * <img width="553" height="467" alt="image" src="https://github.com/user-attachments/assets/f0236f89-f8c9-4ef8-9ac9-43c742f6c930" />
+
+ * Lệnh **tải địa chỉ hiệu dụng** (load effective address) `leaq` thực chất là một biến thể của lệnh `movq`. Nó có hình thức của một lệnh đọc dữ liệu từ memory to register, nhưng thực tế nó **không hề truy cập bộ nhớ**. Toán hạng đầu tiên của nó trông giống như một tham chiếu bộ nhớ, nhưng thay vì đọc dữ liệu từ vị trí được chỉ định, lệnh này lại sao chép địa chỉ hiệu dụng (**effective address**) đó vào đích đến. Chúng ta biểu thị phép tính này trong Hình 3.10 bằng toán tử địa chỉ `&` của ngôn ngữ C.Lệnh này có thể được sử dụng để tạo các con trỏ cho các tham chiếu bộ nhớ sau này. Ngoài ra, nó còn có thể được dùng để mô tả một cách ngắn gọn các phép toán số học thông thường. Ví dụ, nếu thanh ghi `%rdx` chứa giá trị `$x$`, thì lệnh `leaq 7(%rdx,%rdx,4)`, `%rax` sẽ thiết lập thanh ghi `%rax` thành `$5x + 7$`. Compilers thường tìm ra những cách sử dụng `leaq` rất thông minh mà chẳng liên quan gì đến việc tính toán địa chỉ hiệu dụng cả. Toán hạng đích bắt buộc phải là một thanh ghi.
+
+ * 
 ## Control (Điều khiển)
 
 ## Procedures (Hàm)
