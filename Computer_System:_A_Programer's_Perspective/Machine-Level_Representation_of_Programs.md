@@ -459,6 +459,40 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
   movb %si, 8(%rbp)          Lỗi lệch kích thước giữa lệnh và thanh ghi nguồn: Hậu tố b của lệnh movb quy định di chuyển dữ liệu kích thước 1 byte (8-bit), nhưng thanh ghi nguồn %si lại là thanh ghi 2 bytes (16-bit). Định danh thanh ghi và lệnh không đồng bộ với nhau.
   ```
 
+> [!Note]
+> **Understanding how data movement changes a destination register**
+>
+> Như đã mô tả, có hai quy ước khác nhau về việc liệu các lệnh di chuyển dữ liệu có sửa đổi các byte bậc cao (upper bytes) của thanh ghi đích hay không, và sửa đổi như thế nào. Sự khác biệt này được minh họa qua đoạn mã sau:
+>
+> ```asm
+> 1   movabsp   $0x0011223344556677, %rax                  %rax=0011223344556677
+> 2   movb      $-1, %al                                   %rax=00112233445566ff
+> 3   movw      $-1, %ax                                   %rax=001122334455ffff
+> 4   movl      $-1, %eax                                  %rax=00000000ffffffff
+> 5   movq      $-1, %rax                                  %rax=ffffffffffffffff
+> ```
+>
+> trong phần thảo luận dưới đây, chúng ta sử dụng hệ hexadecimal. Trong ví dụ này, câu lệnh ở dòng 1 khởi tạo thanh ghi `%rax` với chuỗi mẫu `0011223344556677`. Các câu lệnh còn lại đều có giá trị tức thời (immediate value) là `-1` làm giá trị nguồn. Hãy nhớ lại rằng biểu diễn thập lục phân của `-1` luôn có dạng `FF...F`, trong đó số lượng ký tự `F` gấp đôi số lượng byte của phần biểu diễn. Do đó, lệnh `movb` (dòng 2) sẽ thiết lập 1 byte bậc thấp (low-order byte) của `%rax` thành `FF`, trong khi lệnh `movw` (dòng 3) thiết lập 2 byte bậc thấp thành `FFFF`, và giữ nguyên các byte còn lại. Lệnh `movl` (dòng 4) thiết lập 4 byte bậc thấp thành `FFFFFFFF`, nhưng nó cũng đồng thời thiết lập 4 byte bậc cao thành `00000000`. Cuối cùng, lệnh `movq` (dòng 5) thiết lập toàn bộ thanh ghi thành `FFFFFFFFFFFFFFFF`.
+>
+
+> [!Note]
+>
+> **Comparing byte movement instructions**
+>
+> Ví dụ sau đây minh họa cách các lệnh di chuyển dữ liệu khác nhau có làm thay đổi hay không các byte bậc cao (high-order bytes) của đích đến. Hãy chú ý rằng ba lệnh di chuyển byte movb, movsbq, và movzbq khác biệt nhau ở những điểm rất tinh tế. Dưới đây là một ví dụ:
+>
+> ```asm
+> 1 movabsq $0x0011223344556677, %rax          %rax=0011223344556677
+> 2 movb    $0xaa ,%dl                         %dl=aa
+> 3 movb    %dl,%al                            %rax=00112233445566aa
+> 4 movsbq  %dl,%rax                           %rax=ffffffffffffffaa
+> 5 movzbq  %dl,%rax                           %rax=00000000000000aa
+> ```
+>
+> Trong phần thảo luận dưới đây, chúng ta sử dụng ký hiệu thập lục phân (hexadecimal) cho tất cả các giá trị. Hai dòng mã đầu tiên khởi tạo các thanh ghi %rax và %dl tương ứng với các giá trị 0011223344556677 và AA. Các lệnh còn lại đều thực hiện việc sao chép byte bậc thấp (low-order byte) của %rdx sang byte bậc thấp của %rax.
+> * Lệnh `mov` không làm thay đổi các byte khác của register dest.
+> * Lệnh `movsbq` thiết lập 7 byte còn lại thành toàn bộ các bit `1` hoặc toàn bộ các bit `0` tùy thuộc vào bit bậc cao nhất (bit dấu) của byte nguồn. Vì ký tự thập lục phân `a` tương đương với giá trị nhị phân `1010`, quá trình mở rộng dấu (sign extension) khiến từng byte bậc cao hơn đều được thiết lập thành `ff`.
+> * Lệnh `movzbq` luôn thiết lập 7 byte còn lại thành số `0`.
 ### 3.4.3 Data Movement Example
 <br>
 
@@ -546,6 +580,36 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
      *zp = tmp2;
      *xp = tmp3;
   }
+
+
+### 3.4.4 Pushing and Popping Stack Data
+<br>
+
+ * Hai thao tác di chuyển dữ liệu cuối cùng được sử dụng để đẩy (push) dữ liệu vào và lấy (pop) dữ liệu ra khỏi ngăn xếp của chương trình (program stack), như được ghi chú trong Hình 3.8. Như chúng ta sẽ thấy, ngăn xếp đóng một vai trò quan trọng trong việc xử lý các lệnh gọi thủ tục (procedure calls). Nói qua về kiến thức nền, ngăn xếp là một cấu trúc dữ liệu nơi các giá trị có thể được thêm vào hoặc xóa đi, nhưng chỉ tuân theo kỷ luật "vào sau, ra trước" (last-in, first-out - LIFO). Chúng ta thêm dữ liệu vào ngăn xếp thông qua thao tác đẩy (push) và loại bỏ dữ liệu thông qua thao tác lấy ra (pop), với thuộc tính là giá trị được lấy ra sẽ luôn là giá trị được đẩy vào gần đây nhất và vẫn còn nằm trên ngăn xếp. Một ngăn xếp có thể được triển khai dưới dạng một mảng, nơi chúng ta luôn chèn và xóa các phần tử từ cùng một đầu của mảng. Đầu này được gọi là đỉnh của ngăn xếp (top of the stack). Với kiến trúc x86-64, ngăn xếp chương trình được lưu trữ trong một vùng nào đó của bộ nhớ. Như được minh họa trong Hình 3.9, ngăn xếp phát triển hướng xuống dưới (grows downward) sao cho phần tử trên cùng của ngăn xếp có địa chỉ thấp nhất trong tất cả các phần tử của ngăn xếp. (Theo quy ước, chúng ta vẽ các ngăn xếp lộn ngược, với "đỉnh" của ngăn xếp được hiển thị ở phần dưới cùng của hình vẽ.) Con trỏ ngăn xếp (stack pointer) `%rsp` lưu giữ địa chỉ của phần tử nằm trên đỉnh ngăn xếp.
+ * <img width="411" height="159" alt="image" src="https://github.com/user-attachments/assets/d43d6d80-a126-4614-a85e-8dd67045f651" />
+
+ * <img width="571" height="440" alt="image" src="https://github.com/user-attachments/assets/8c09fa1e-f059-4346-b902-891970ec1b13" />
+
+ * Lệnh `pushq` cung cấp khả năng đẩy (push) dữ liệu vào ngăn xếp (stack), trong khi lệnh `popq` lấy (pop) dữ liệu ra khỏi đó. Mỗi lệnh này chỉ nhận một toán hạng (operand) duy nhất — đóng vai trò là nguồn dữ liệu đối với thao tác đẩy, và là đích đến của dữ liệu đối với thao tác lấy ra.
+ * Lệnh pushq cung cấp khả năng đẩy (push) dữ liệu vào ngăn xếp (stack), trong khi lệnh popq lấy (pop) dữ liệu ra khỏi đó. Mỗi lệnh này chỉ nhận một toán hạng (operand) duy nhất — đóng vai trò là nguồn dữ liệu đối với thao tác đẩy, và là đích đến của dữ liệu đối với thao tác lấy ra.
+ * Do đó, hành vi của lệnh `pushq %rbp` hoàn toàn tương đương với cặp lệnh sau:
+
+   ```asm
+   subq $8, %rsp         Decrement stack pointer
+   movq %rbp, (%rsp)     Store %rbp on stack
+   ```
+
+ * ...ngoại trừ một điểm khác biệt là lệnh `pushq` được mã hóa trong machine code chỉ bằng một byte duy nhất, trong khi cặp lệnh hiển thị ở trên đòi hỏi tổng cộng 8 byte. Hai cột đầu tiên trong Hình 3.9 minh họa kết quả của việc thực thi lệnh `pushq %rax` khi `%rsp` đang có giá trị là `0x108` và `%rax` là `0x123`. Đầu tiên, `%rsp` được giảm đi `8`, tạo ra địa chỉ `0x100`, và sau đó giá trị `0x123` được lưu trữ tại địa chỉ bộ nhớ `0x100`.
+ * Việc lấy (popping) một giá trị quad word bao gồm việc **đọc** dữ liệu từ vị trí đỉnh ngăn xếp hiện tại và sau đó `tăng` con trỏ ngăn xếp thêm 8. Do đó, lệnh `popq %rax` tương đương với cặp lệnh sau:
+
+   ```asm
+   movq (%rsp), %rax      Read %rax from stack
+   addq $8, %rsp          Increment stack pointer
+   ```
+
+ * Cột thứ ba của Hình 3.9 minh họa kết quả của việc thực thi lệnh `popq %rdx` ngay sau khi đã thực hiện lệnh `pushq`. Giá trị `0x123` được đọc từ bộ nhớ và ghi vào thanh ghi `%rdx`. Con trỏ ngăn xếp `%rsp` được tăng trở lại giá trị `0x108`. Như được thể hiện trong hình, giá trị `0x123` vẫn còn nằm tại vị trí bộ nhớ `0x104` cho đến khi nó bị ghi đè (ví dụ: bởi một thao tác push khác). Tuy nhiên, đỉnh của ngăn xếp luôn được coi là địa chỉ do %rsp chỉ định.
+ * Vì ngăn xếp được chứa trong cùng vùng bộ nhớ với mã chương trình và các dạng dữ liệu chương trình khác, nên các chương trình có thể truy cập vào các vị trí tùy ý bên trong ngăn xếp bằng cách sử dụng các phương thức định địa chỉ bộ nhớ tiêu chuẩn. Ví dụ, giả sử phần tử nằm trên cùng của ngăn xếp là một `quad word` (8 byte), thì lệnh `movq 8(%rsp), %rdx` sẽ sao chép `quad word` thứ hai từ ngăn xếp vào thanh ghi `%rdx`.
+
 ## Arithmetic and Logical Operations (Các phép toán số học và logic)
 
 ## Control (Điều khiển)
