@@ -622,7 +622,52 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 
  * Lệnh **tải địa chỉ hiệu dụng** (load effective address) `leaq` thực chất là một biến thể của lệnh `movq`. Nó có hình thức của một lệnh đọc dữ liệu từ memory to register, nhưng thực tế nó **không hề truy cập bộ nhớ**. Toán hạng đầu tiên của nó trông giống như một tham chiếu bộ nhớ, nhưng thay vì đọc dữ liệu từ vị trí được chỉ định, lệnh này lại sao chép địa chỉ hiệu dụng (**effective address**) đó vào đích đến. Chúng ta biểu thị phép tính này trong Hình 3.10 bằng toán tử địa chỉ `&` của ngôn ngữ C.Lệnh này có thể được sử dụng để tạo các con trỏ cho các tham chiếu bộ nhớ sau này. Ngoài ra, nó còn có thể được dùng để mô tả một cách ngắn gọn các phép toán số học thông thường. Ví dụ, nếu thanh ghi `%rdx` chứa giá trị `$x$`, thì lệnh `leaq 7(%rdx,%rdx,4)`, `%rax` sẽ thiết lập thanh ghi `%rax` thành `$5x + 7$`. Compilers thường tìm ra những cách sử dụng `leaq` rất thông minh mà chẳng liên quan gì đến việc tính toán địa chỉ hiệu dụng cả. Toán hạng đích bắt buộc phải là một thanh ghi.
 
- * 
+ * **Practice Problem 3.6**
+   Giả sử thanh ghi `%rbx` chứa giá trị `$p$` và thanh ghi `%rdx` chứa giá trị `$q$`. Hãy điền vào bảng bên dưới các công thức biểu thị giá trị sẽ được lưu trữ trong thanh ghi `%rax` cho mỗi lệnh assembly được đưa ra:
+   
+   |Instruction|Result|
+   |:--:|:--:|
+   |leaq 9(%rdx), %rax|q+9|
+   |leaq (%rdx,%rbx), %rax|q+p|
+   |leaq (%rdx,%rbx,3), %rax|q+3p|
+   |leaq 2(%rbx,%rbx,7) %rax|8p+2|
+   |leaq 0xe(,%rdx,3), %rax|3q+0xe|
+   |leaq 6(%rbx,%rbx,7)), %rax|7p+q+6|
+
+
+ * **Practice Problem 3.7**
+
+   ```c
+   short scale3(short x, short y, short z){
+      short t = z + 10y + xy;
+   }
+
+### 3.5.2 Unary and Binary Operations
+<br>
+
+ * Các phép toán trong nhóm thứ hai là các **phép toán một ngôi** (unary operations), với toán hạng duy nhất đóng vai trò vừa là nguồn (source) vừa là đích (destination). Toán hạng này có thể là một thanh ghi (register) hoặc một vị trí bộ nhớ (memory location). Ví dụ, lệnh `incq (%rsp)` làm cho phần tử 8-byte nằm trên đỉnh ngăn xếp (stack) được tăng thêm giá trị. Cú pháp này gợi nhớ đến các toán tử tăng (`++`) và giảm (`--`) trong ngôn ngữ C
+ * Nhóm thứ ba bao gồm các **phép toán hai ngôi** (binary operations), trong đó toán hạng thứ hai được sử dụng làm cả nguồn và đích. Cú pháp này gợi nhớ đến các toán tử gán trong C, chẳng hạn như `x -= y`. Tuy nhiên, hãy lưu ý rằng toán hạng nguồn được đưa ra trước và toán hạng đích được đưa ra sau. Điều này trông có vẻ kỳ lạ đối với các phép toán không có tính giao hoán (noncommutative operations). Ví dụ, lệnh `subq %rax,%rdx` sẽ giảm giá trị của thanh ghi `%rdx` đi một lượng bằng giá trị nằm trong `%rax`. (Sẽ dễ nhớ hơn nếu bạn đọc lệnh này là "Trừ  `%rax` khỏi `%rdx`".) Toán hạng thứ nhất có thể là một giá trị trực tiếp (immediate value), một thanh ghi, hoặc một vị trí bộ nhớ. Toán hạng thứ hai có thể là một thanh ghi hoặc một vị trí bộ nhớ. Tương tự như các lệnh `mov`, hai toán hạng này không thể cùng lúc là vị trí bộ nhớ. Lưu ý rằng khi toán hạng thứ hai là một vị trí bộ nhớ, bộ vi xử lý phải đọc giá trị từ bộ nhớ, thực hiện phép toán, và sau đó ghi kết quả trở lại bộ nhớ.
+ 
+ * **Practice Problem 3.8**
+   
+   Dưới đây là bản dịch chi tiết cho bài tập của bạn:
+
+   |Address|Value|Register|Value|
+   |:--|:--|:--|:--|
+   |0x100|0xff|%rax|0x100|
+   |0x108|0xab|%rcx|0x1|
+   |0x110|0x13|%rdx|0x3|
+   |0x118|0x11|
+
+   Hãy điền vào bảng sau đây để cho thấy tác động của các câu lệnh bên dưới, xét về mặt thanh ghi hoặc vị trí bộ nhớ nào sẽ được cập nhật và giá trị kết quả tương ứng là bao nhiêu:
+
+   |Instruction|Destination|Value|
+   |:--|:--|:--|
+   |addq %rcx, (%rax)|||
+   |subq %rdx, 8(%rax)|||
+   |imulq $16(%rax)|||
+   |decq %rcx|||
+   |subq %rdx, %rax|   
 ## Control (Điều khiển)
 
 ## Procedures (Hàm)
