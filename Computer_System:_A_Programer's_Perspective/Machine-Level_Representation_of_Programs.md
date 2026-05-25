@@ -663,11 +663,49 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 
    |Instruction|Destination|Value|
    |:--|:--|:--|
-   |addq %rcx, (%rax)|||
-   |subq %rdx, 8(%rax)|||
-   |imulq $16(%rax)|||
-   |decq %rcx|||
-   |subq %rdx, %rax|   
+   |addq %rcx, (%rax)|0x100|0x100|
+   |subq %rdx, 8(%rax)|0x108|0xa8|
+   |imulq $16, (%rax,%rdx,8)|0x118|0x110|
+   |incq 16(%rax)|0x110|0x14|
+   |decq %rcx|0x0|
+   |subq %rdx, %rax|0x100|0xfd|
+
+
+### 3.5.3 Shift Operations
+<br>
+
+* Nhóm lệnh cuối cùng bao gồm các phép toán dịch bit (**shift operations**), trong đó lượng dịch (shift amount) được chỉ định trước và giá trị cần dịch được chỉ định sau. Có thể thực hiện cả phép dịch phải số học (**arithmetic right shift**) và dịch phải logic (**logical right shift**). Các lệnh dịch bit khác nhau có thể quy định lượng dịch dưới dạng một giá trị tức thời (immediate value) hoặc thông qua thanh ghi 1-byte `%cl`. (Các lệnh này khá đặc biệt ở chỗ chúng chỉ cho phép sử dụng duy nhất thanh ghi này làm toán hạng). Về nguyên tắc, việc sử dụng lượng dịch kích thước 1 byte cho phép mã hóa các giá trị dịch lên đến $2^8 - 1 = 255$. Trong kiến trúc x86-64, một lệnh dịch thao tác trên các giá trị dữ liệu có độ dài $w$ bit sẽ xác định lượng dịch dựa trên $m$ bit bậc thấp (low-order bits) của thanh ghi `%cl`, với điều kiện $2^m = w$. Các bit bậc cao hơn (của thanh ghi `%cl`) sẽ bị bỏ qua. Do đó, ví dụ, khi thanh ghi `%cl` chứa giá trị thập lục phân là `0xFF` (tất cả các bit đều là 1):Lệnh `salb` (dịch byte - 8 bit, $m=3$) sẽ dịch đi **7** bit (vì 3 bit cuối của 0x`FF` là `111` tức là `7`).Lệnh `salw` (dịch word - 16 bit, $m=4$) sẽ dịch đi `15` bit.Lệnh `sall` (dịch long/double word - 32 bit, $m=5$) sẽ dịch đi `31` bit.Lệnh `salq` (dịch quad word - 64 bit, $m=6$) sẽ dịch đi `63` bit.
+* Như Hình 3.10 minh họa, lệnh dịch trái có hai tên gọi: `sal` và `shl`. Cả hai lệnh này đều có cùng một tác dụng, đó là dịch các bit sang trái và điền các số `0` vào vị trí trống ở phía bên phải. Các lệnh dịch phải thì có sự khác biệt: `sar` thực hiện phép dịch số học (lấp đầy các vị trí trống bên trái bằng bản sao của bit dấu - sign bit, nhằm giữ nguyên dấu của số). `shr` thực hiện phép dịch logic (lấp đầy các vị trí trống bên trái bằng các số 0). Toán hạng đích (destination operand) của một phép dịch có thể là một thanh ghi hoặc một vị trí trong bộ nhớ. Chúng ta ký hiệu hai phép dịch phải khác nhau trong Hình 3.10 là `>>A` (dịch số học - arithmetic) và `>>L` (dịch logic - logical).
+
+* **Problem 3.9**
+
+  Giả sử chúng ta muốn tạo assembly code cho hàm C sau đây:
+
+  ```c
+  long shift_left4_rightn(long x, long n){
+      x <<= 4;
+      x >>= n;
+      return x;
+  }
+  ```
+
+  Đoạn mã dưới đây là một phần của mã hợp ngữ thực hiện các phép toán dịch bit thực tế và lưu giá trị cuối cùng vào thanh ghi `%rax`. Hai lệnh quan trọng đã bị lược bỏ. Các tham số `x` và `n` lần lượt được lưu trữ trong các thanh ghi `%rdi` và `%rsi`.
+
+  ```asm
+     long shift_left4_rightn(long x, long n){
+     x in %rdi, n in %rsi
+
+  shift_left4_rightn:
+    movq %rdi, %rax    Get x
+    salq $4, %rax      x <<= 4
+    movl %esi, %ecx    Get n (4bytes)
+    sarq %cl, %rax     x >>= n
+  ```
+
+  
+  <img width="432" height="389" alt="image" src="https://github.com/user-attachments/assets/3f84390f-a2c1-4b49-84c5-1f51bcf50b3a" />
+
+  
 ## Control (Điều khiển)
 
 ## Procedures (Hàm)
