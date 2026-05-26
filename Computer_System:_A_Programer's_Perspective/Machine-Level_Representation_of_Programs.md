@@ -811,7 +811,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
 
   * Hãy chú ý rằng việc lưu trữ tích số (kết quả của phép nhân) đòi hỏi tới hai lệnh `movq`: một lệnh dành cho 8 byte bậc thấp (dòng 4) và một lệnh dành cho 8 byte bậc cao (dòng 5). Vì mã máy được tạo ra cho kiến trúc little-endian, nên các byte bậc cao sẽ được lưu trữ ở các địa chỉ bộ nhớ cao hơn, đúng như được chỉ định bởi đặc tả địa chỉ `8(%rdi)`.
   * Bảng các phép toán số học trước đây của chúng ta (Hình 3.10) không liệt kê bất kỳ phép toán chia hay phép chia lấy dư (modulus) nào. Các phép toán này được cung cấp bởi các lệnh chia một toán hạng (single-operand divide instructions), hoạt động tương tự như các lệnh nhân một toán hạng. Lệnh chia có dấu `idivq` lấy số bị chia (dividend) là một đại lượng 128-bit nằm trong các thanh ghi `%rdx` (chứa 64 bit bậc cao) và `%rax` (chứa 64 bit bậc thấp). Số chia (**divisor**) được cung cấp dưới dạng toán hạng đi kèm với lệnh. Lệnh này sẽ lưu trữ thương số (**quotient**) vào thanh ghi `%rax` và số dư (**remainder**) vào thanh ghi `%rdx`.
-  * Đối với hầu hết các ứng dụng của phép chia 64-bit (sách gốc viết nhầm là "64-bit addition"), số bị chia thường chỉ được cho dưới dạng một giá trị 64-bit. Giá trị này cần được lưu trữ trong thanh ghi `%rax`. Khi đó, các bit của thanh ghi `%rdx` phải được thiết lập thành toàn số 0 (đối với số học không dấu) hoặc lấp đầy bằng bit dấu của thanh ghi `%rax` (đối với số học có dấu). Thao tác thứ hai (mở rộng dấu) có thể được thực hiện bằng cách sử dụng lệnh $cqto^2$. Lệnh này không yêu cầu toán hạng nào—nó ngầm định đọc bit dấu từ `%rax` và sao chép bit dấu đó lên toàn bộ các bit của thanh ghi `%rdx`.
+  * Đối với hầu hết các ứng dụng của phép chia 64-bit, số bị chia thường chỉ được cho dưới dạng một giá trị 64-bit. Giá trị này cần được lưu trữ trong thanh ghi `%rax`. Khi đó, các bit của thanh ghi `%rdx` phải được thiết lập thành toàn số 0 (đối với số học không dấu) hoặc lấp đầy bằng bit dấu của thanh ghi `%rax` (đối với số học có dấu). Thao tác thứ hai (mở rộng dấu) có thể được thực hiện bằng cách sử dụng lệnh $cqto^2$. Lệnh này không yêu cầu toán hạng nào—nó ngầm định đọc bit dấu từ `%rax` và sao chép bit dấu đó lên toàn bộ các bit của thanh ghi `%rdx`.
   * Để minh họa cho việc triển khai phép chia trong kiến trúc x86-64, hàm C dưới đây sẽ tính toán thương số và số dư của hai số nguyên 64-bit có dấu:
 
     ```c
@@ -824,7 +824,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
     ```
 
     ```asm
-    voi remdiv(long x, long y, long *qp, long *rp)
+    void remdiv(long x, long y, long *qp, long *rp)
     x in %rdi, y in %rsi, qp in %rdx, rp in %rcx
     remdiv:
       movq   %rdx, %r8      copy qp
@@ -838,9 +838,204 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
     Trong đoạn mã này, đối số `rp` trước tiên phải được cất tạm vào một thanh ghi khác (ở dòng 2), bởi vì thanh ghi đối số `%rdx` bị bắt buộc sử dụng cho phép toán chia. Các dòng 3–4 sau đó chuẩn bị số bị chia (**dividend**) bằng cách sao chép và thực hiện mở rộng dấu (**sign-extending**) cho biến `x`. Sau khi thực hiện phép chia, thương số (**quotient**) nằm trong thanh ghi `%rax` sẽ được lưu vào vị trí do con trỏ qp chỉ định (dòng 6), trong khi số dư (**remainder**) nằm trong thanh ghi %rdx sẽ được lưu vào vị trí của con trỏ rp (dòng 7).
 
     Phép chia không dấu (**unsigned division**) thì sử dụng lệnh `divq`. Theo thông lệ, thanh ghi `%rdx` sẽ được thiết lập về giá trị 0 trước khi thực hiện lệnh này.
-    
-## Control (Điều khiển)
 
+
+
+ * **Practice Problem 3.12**
+
+   Hãy xem xét hàm sau đây dùng để tính thương số (quotient) và số dư (remainder) của hai số 64-bit không dấu (unsigned 64-bit numbers):
+
+   ```c
+   void uremdiv(unsigned long x, unsigned long y, unsigned long *qp, unsigned long *rp){
+       unsigned long q= x/y;
+       unsigned long r= x%y;
+       *qp = q;
+       *rp = r;
+   }
+   ```
+
+   Hãy sửa đổi đoạn assembly code của phép chia có dấu (đã hiển thị ở phần trước) để triển khai (implement) hàm này.
+
+   ```asm
+   void uremdiv(long x, long y, long *qp, long *rp)
+    x in %rdi, y in %rsi, qp in %rdx, rp in %rcx
+   uremdiv:
+     movq  %rdx, %r8
+     movq  %rdi, %rax
+     xorl  %edx, %edx
+     divq  %rsi
+     movq  %rax, (%r8)
+     movq  %rdx, (%rcx)
+   ```
+
+    
+## 3.6 Control (Điều khiển)
+<br>
+
+* Cho đến nay, chúng ta mới chỉ xem xét hành vi của **mã tuyến tính** (straight-line code), nơi các lệnh nối tiếp nhau một cách tuần tự. Một số cấu trúc trong C, chẳng hạn như câu lệnh điều kiện (conditionals), vòng lặp (loops) và câu lệnh rẽ nhánh (switches), yêu cầu **thực thi có điều kiện** (conditional execution), trong đó chuỗi các thao tác được thực hiện sẽ phụ thuộc vào kết quả của các phép kiểm tra áp dụng lên dữ liệu. Mã máy cung cấp hai cơ chế cấp thấp cơ bản để triển khai hành vi có điều kiện: nó kiểm tra các giá trị dữ liệu và sau đó thay đổi **luồng điều khiển** (control flow) hoặc **luồng dữ liệu** (data flow) dựa trên kết quả của các phép kiểm tra này.
+* Luồng điều khiển phụ thuộc dữ liệu (Data-dependent control flow) là cách tiếp cận tổng quát và phổ biến hơn để triển khai hành vi có điều kiện, do đó chúng ta sẽ xem xét phương pháp này trước tiên. Thông thường, cả các câu lệnh trong C và các lệnh trong mã máy đều được thực thi một cách tuần tự, theo đúng thứ tự chúng xuất hiện trong chương trình. Thứ tự thực thi của một tập hợp các lệnh mã máy có thể được thay đổi bằng một **lệnh nhảy** (jump instruction). Lệnh này chỉ định rằng quyền điều khiển sẽ được chuyển sang một phần khác của chương trình, và việc chuyển quyền này có thể phụ thuộc (contingent) vào kết quả của một phép kiểm tra nào đó. Compiler phải tạo ra các chuỗi lệnh được xây dựng dựa trên cơ chế cấp thấp này để triển khai các cấu trúc điều khiển của ngôn ngữ C.
+* Trong phần trình bày của mình, trước tiên chúng tôi sẽ đề cập đến hai cách triển khai các phép toán có điều kiện. Sau đó, chúng tôi sẽ mô tả các phương pháp để biểu diễn vòng lặp và câu lệnh switch.
+
+### 3.6.1 Condition Codes
+<br>
+
+* Ngoài các thanh ghi số nguyên (integer registers), CPU còn duy trì một tập hợp các thanh ghi **mã điều kiện** (condition code registers) với kích thước mỗi thanh ghi chỉ là 1-bit, dùng để mô tả các đặc tính của phép toán số học hoặc logic gần nhất. Các thanh ghi này sau đó có thể được kiểm tra để thực hiện các lệnh rẽ nhánh có điều kiện (conditional branches). Các mã điều kiện hữu ích nhất bao gồm:
+  * **CF (Carry flag - Cờ nhớ)**: Phép toán gần nhất đã tạo ra một giá trị nhớ (carry) từ bit có trọng số cao nhất (most significant bit). Cờ này được sử dụng để phát hiện tràn số cho các phép toán **không dấu** (unsigned).
+  * **ZF (Zero flag - Cờ zero)**: Phép toán gần nhất cho kết quả bằng 0.
+  * **SF (Sign flag - Cờ dấu)**: Phép toán gần nhất cho kết quả là một giá trị âm.
+  * **OF (Overflow flag - Cờ tràn)**: Phép toán gần nhất đã gây ra tình trạng tràn số trong biểu diễn **bù hai (two’s-complement)**—có thể là tràn dương hoặc tràn âm.
+* Ví dụ, giả sử chúng ta sử dụng một trong các lệnh `ADD` để thực hiện phép gán tương đương trong C là `t = a + b` (trong đó a, b, và t là các số nguyên). Khi đó, các mã điều kiện sẽ được thiết lập theo các biểu thức C sau:
+  * CF (Cờ nhớ): (unsigned) t < (unsigned) a           (Tràn số không dấu)
+  * ZF (Cờ zero): t == 0                               (Bằng 0)
+  * SF (Cờ dấu): t < 0                                 (Số âm)
+  * OF (Cờ tràn): (a < 0 == b < 0) && (t < 0 != a < 0) (Tràn số có dấu)
+
+* <img width="542" height="309" alt="image" src="https://github.com/user-attachments/assets/dd588113-e2e9-487b-8bb4-6a9d7c02968d" />
+
+* Lệnh `leaq` không làm thay đổi bất kỳ mã điều kiện nào, vì nó được thiết kế chỉ để sử dụng trong các tính toán địa chỉ. Ngược lại, tất cả các lệnh khác được liệt kê trong Hình 3.10 đều làm thay đổi mã điều kiện. Đối với các lệnh logic như `XOR`, cờ nhớ (carry flag) và cờ tràn (overflow flag) sẽ được đặt về 0. Đối với các lệnh dịch bit, cờ nhớ được đặt bằng giá trị của bit cuối cùng bị đẩy ra ngoài, trong khi cờ tràn được đặt về 0. Vì những lý do mà chúng ta sẽ không đi sâu vào, các lệnh `INC` (tăng) và `DEC` (giảm) làm thay đổi cờ tràn và cờ zero, nhưng chúng không làm thay đổi cờ nhớ.
+* Ngoài việc thiết lập mã điều kiện thông qua các lệnh trong Hình 3.10, còn có hai nhóm lệnh (với các biến thể 8, 16, 32 và 64 bit) giúp thiết lập mã điều kiện mà **không làm thay đổi bất kỳ thanh ghi nào khác**; chúng được liệt kê trong Hình 3.13.
+  * Các lệnh `CMP` (So sánh) thiết lập mã điều kiện dựa trên hiệu số của hai toán hạng. Chúng hoạt động giống như các lệnh `SUB` (trừ), ngoại trừ việc chúng thiết lập mã điều kiện mà không cập nhật giá trị vào toán hạng đích. Trong định dạng AT&T, các toán hạng được liệt kê theo thứ tự ngược lại, khiến mã nguồn khó đọc hơn. Các lệnh này thiết lập cờ zero nếu hai toán hạng bằng nhau. Các cờ còn lại có thể được sử dụng để xác định quan hệ thứ tự giữa hai toán hạng.
+  * Các lệnh `TEST` (Kiểm tra) hoạt động theo cách tương tự như các lệnh `AND`, ngoại trừ việc chúng thiết lập mã điều kiện mà không làm thay đổi toán hạng đích. Thông thường, cùng một toán hạng sẽ được lặp lại (ví dụ: `testq %rax, %rax` để kiểm tra xem `%rax` là âm, bằng 0 hay dương), hoặc một trong các toán hạng sẽ là một mặt nạ (mask) chỉ định những bit nào cần được kiểm tra.
+ 
+### 3.6.2 Accessing the Condition Codes
+<br>
+
+ * Thay vì đọc trực tiếp các mã điều kiện (condition codes), có ba cách phổ biến để sử dụng chúng: (1) đặt một byte đơn lẻ thành 0 hoặc 1 dựa trên một tổ hợp các mã điều kiện, (2) nhảy có điều kiện đến một phần khác của chương trình, hoặc (3) truyền dữ liệu có điều kiện.
+   * Đối với trường hợp thứ nhất, các lệnh được mô tả trong Hình 3.14 sẽ đặt một byte đơn thành 0 hoặc 1 tùy thuộc vào một tổ hợp các mã điều kiện. Chúng ta gọi toàn bộ nhóm lệnh này là các lệnh set; chúng khác biệt nhau dựa trên tổ hợp các mã điều kiện mà chúng xem xét, được chỉ ra bởi các hậu tố khác nhau trong tên lệnh. Điều quan trọng cần nhận biết là các hậu tố này biểu thị các điều kiện khác nhau chứ không phải kích thước toán hạng. Ví dụ, lệnh `setl` và `setb` có nghĩa là "set nếu nhỏ hơn" (set less) và "set nếu thấp hơn" (set below), chứ không phải "set long word" hay "set byte".
+
+* Một lệnh `set` có đích đến là một trong các thanh ghi 1-byte bậc thấp (Hình 3.2) hoặc một vị trí bộ nhớ 1-byte, đặt byte này thành 0 hoặc 1. Để tạo ra kết quả 32-bit hoặc 64-bit, chúng ta cũng phải xóa các bit bậc cao. Một chuỗi lệnh điển hình để tính biểu thức C `a < b` (với `a` và `b` đều thuộc kiểu `long`) diễn ra như sau:
+
+  <img width="545" height="376" alt="image" src="https://github.com/user-attachments/assets/4d283323-45a1-42f4-a650-fe325f22c39b" />
+
+  ```asm
+  int comp(data_t a, data_t b)
+  a in %rdi, b in %rsi
+
+  comp:
+    cmpq  %rsi, %rdi       compare a:b 
+    setl  %al              Set low-order byte of %eax to 0 or 1
+    movzbl %al, %eax       Clear rest of %rax (and rest of %eax)
+    ret
+  ```
+
+  Lưu ý: Bạn hãy chú ý thứ tự so sánh của lệnh `cmpq` ở dòng 2. Mặc dù các đối số được liệt kê theo thứ tự `%rsi` (b), rồi đến `%rdi` (a), nhưng phép so sánh thực tế là giữa `a` và `b`. Cũng cần nhớ rằng, như đã thảo luận ở Phần 3.4.2, lệnh `movzbl` ở dòng 4 không chỉ xóa 3 byte bậc cao của `%eax`, mà còn xóa sạch toàn bộ 4 byte phía trên của toàn bộ thanh ghi `%rax`.
+* Với một số lệnh máy cấp thấp, có nhiều tên gọi khả dĩ, chúng tôi liệt kê chúng là "từ đồng nghĩa" (synonyms). Ví dụ, cả `setg` (cho "set lớn hơn") và `setnle` (cho "set không nhỏ hơn hoặc bằng") đều cùng chỉ một lệnh máy. Các trình biên dịch và trình dịch ngược (disassembler) đưa ra các lựa chọn tùy ý về việc sử dụng tên gọi nào.
+* Mặc dù tất cả các phép toán số học và logic đều thiết lập mã điều kiện, các mô tả về các lệnh set khác nhau chỉ áp dụng cho trường hợp một lệnh so sánh đã được thực thi, thiết lập mã điều kiện theo tính toán `t = a - b`. Cụ thể hơn, giả sử `a`, `b` và `t` là các số nguyên được biểu diễn dưới dạng bù hai (two’s-complement) bởi các biến tương ứng, và $t = a -^t_w b$, trong đó w phụ thuộc vào kích thước gắn với `a` và `b`.
+* Hãy xét lệnh `sete` (set khi bằng nhau). Khi `a = b`, ta có `t = 0`, do đó cờ zero (ZF) chỉ ra sự bằng nhau. Tương tự, hãy xét việc kiểm tra so sánh có dấu với lệnh `setl` (set khi nhỏ hơn). Khi không có tràn số (OF = 0), ta có `a < b` khi $a -^t_w b < 0$, được chỉ ra bởi cờ dấu (SF) bằng 1; và `a >= b` khi $a -^t_w b >= 0$, chỉ ra bởi SF bằng 0. Mặt khác, khi có tràn số xảy ra, ta có `a < b` khi $a -^t_w b > 0$ (tràn âm) và `a > b` khi $a -^t_w b < 0$ (tràn dương). Không thể xảy ra tràn số khi `a = b`. Do đó, khi cờ OF = 1, ta có `a < b` khi và chỉ khi SF = 0. Kết hợp các trường hợp này lại, phép toán `XOR` giữa cờ tràn và cờ dấu (SF ^ OF) cung cấp một phép kiểm tra cho việc `a < b`. Các phép so sánh có dấu khác dựa trên các tổ hợp khác của SF ^ OF và ZF.
+* Đối với việc kiểm tra so sánh không dấu, ta coi `a` và `b` là các số nguyên không dấu. Khi thực hiện `t = a - b`, cờ nhớ (CF) sẽ được lệnh cmp thiết lập khi `a - b < 0`, vì vậy các phép so sánh không dấu sử dụng tổ hợp giữa cờ nhớ (CF) và cờ zero (ZF).
+* Điều quan trọng cần lưu ý là mã máy phân biệt (hoặc không phân biệt) giữa các giá trị có dấu và không dấu như thế nào. Không giống như trong C, mã máy không gắn kiểu dữ liệu với từng giá trị chương trình. Thay vào đó, nó chủ yếu sử dụng các lệnh giống nhau cho cả hai trường hợp, bởi vì nhiều phép toán số học có hành vi cấp độ bit giống nhau cho cả số không dấu và số bù hai. Một số trường hợp đòi hỏi các lệnh khác nhau để xử lý các phép toán có dấu và không dấu, chẳng hạn như dùng các phiên bản dịch phải khác nhau, các lệnh chia/nhân khác nhau và các tổ hợp mã điều kiện khác nhau.
+
+
+### 3.6.3 Jump Instructions
+<br>
+
+* Trong quá trình thực thi thông thường, các lệnh được thực hiện lần lượt theo thứ tự liệt kê. Một lệnh nhảy (jump instruction) có thể khiến chương trình chuyển hướng thực thi đến một vị trí hoàn toàn mới. Các đích đến của lệnh nhảy này thường được chỉ định trong mã hợp ngữ bằng một cái **nhãn (label)**. Hãy xem xét chuỗi mã hợp ngữ (rất khiên cưỡng) sau đây:
+
+  ```asm
+    movq $0, %rax        Set %rax to 
+    jmp .L1              Goto .L1
+    movq (%rax), %rdx    Null pointer dereference (skipped)
+  .L1
+    popq %rdx            Jump target
+  ```
+
+  <img width="539" height="426" alt="image" src="https://github.com/user-attachments/assets/1827e220-bd19-4eaa-9fba-14954a7dd96f" />
+
+* Lệnh `jmp .L1` sẽ khiến chương trình bỏ qua lệnh `movq` (tham chiếu con trỏ null) và thay vào đó tiếp tục thực thi từ lệnh `popq`. Trong quá trình tạo tệp mã đối tượng (object-code file), assembler xác định địa chỉ của tất cả các lệnh được gắn nhãn và mã hóa các **đích đến của lệnh nhảy (jump targets)** — tức là địa chỉ của các lệnh cần chuyển đến — như một phần của chính các lệnh nhảy đó.
+* Lệnh jmp trong bảng trên thực hiện việc nhảy không điều kiện. Nó có thể là:
+  * Nhảy trực tiếp (direct jump): Nơi đích nhảy được mã hóa ngay bên trong lệnh.
+  * Nhảy gián tiếp (indirect jump): Nơi đích nhảy được đọc từ một thanh ghi hoặc một vị trí bộ nhớ. Các lệnh nhảy được viết trong mã hợp ngữ bằng cách cung cấp một nhãn làm đích đến. Các lệnh nhảy gián tiếp được viết bằng dấu `*` theo sau là một toán hạng chỉ định (operand specifier), sử dụng một trong các định dạng toán hạng bộ nhớ được mô tả ở Hình 3.3. Ví dụ:
+    * `jmp *%rax`: Sử dụng giá trị trong thanh ghi `%rax` làm đích nhảy.
+    * `jmp *(%rax)`: Đọc giá trị từ địa chỉ bộ nhớ được lưu trong `%rax` để dùng làm đích nhảy.
+   
+* Các lệnh nhảy còn lại trong bảng là các lệnh nhảy có điều kiện (conditional jumps) — chúng sẽ nhảy hoặc tiếp tục thực thi lệnh tiếp theo trong chuỗi mã tùy thuộc vào tổ hợp các mã điều kiện (condition codes). Tên của các lệnh này và điều kiện mà chúng nhảy khớp với các lệnh `SET` (xem Hình 3.14). Tương tự như các lệnh `SET`, một số lệnh máy cấp thấp cũng có nhiều tên gọi thay thế. Các lệnh nhảy có điều kiện chỉ có thể là nhảy trực tiếp.
+
+### 3.6.4 Jump Instruction Encodings
+<br>
+
+
+* Phần lớn thời gian, chúng ta sẽ không quá quan tâm đến định dạng chi tiết của mã máy. Tuy nhiên, việc hiểu cách mã hóa đích đến (targets) của các lệnh nhảy sẽ trở nên quan trọng khi chúng ta nghiên cứu về quá trình **liên kết (linking)** trong Chương 7. Ngoài ra, điều này cũng hữu ích khi diễn giải kết quả đầu ra của disassembler. Trong assembly, đích nhảy được viết bằng các nhãn tượng trưng (symbolic labels). Assembler và sau đó là linker sẽ tạo ra các mã hóa phù hợp cho các đích nhảy này. Có vài phương thức mã hóa khác nhau cho các lệnh nhảy, nhưng một trong những phương thức phổ biến nhất là **PC-relative** **(tương đối theo bộ đếm chương trình - Program Counter)**. Nghĩa là, chúng mã hóa sự khác biệt giữa địa chỉ của lệnh đích và địa chỉ của lệnh nằm ngay sau lệnh nhảy. Các độ lệch (offsets) này có thể được mã hóa bằng 1, 2 hoặc 4 byte. Phương thức mã hóa thứ hai là cung cấp một địa chỉ "tuyệt đối" (absolute address), sử dụng 4 byte để chỉ định trực tiếp đích đến. Trình hợp dịch và trình liên kết sẽ lựa chọn các cách mã hóa đích nhảy phù hợp nhất.
+* Lấy ví dụ về phương thức địa chỉ hóa PC-relative, đoạn mã hợp ngữ dưới đây của một hàm được tạo ra bằng cách biên dịch một tệp **branch.c**. Nó chứa hai lệnh nhảy: lệnh `jmp` ở dòng 2 nhảy về phía trước đến một địa chỉ cao hơn, trong khi lệnh `jg` (jump if greater) ở dòng 7 nhảy ngược lại về một địa chỉ thấp hơn.
+
+  ```asm
+     movq  %rdi, %rax
+     jmp   .L2
+  .L3:
+     sarq  %rax
+  .L2:
+     testq %rax, %rax
+     jg    .L3
+     rep; ret
+  ```
+
+  Disassembled của định dạng tệp .o do assembler tạo ra:
+
+  ```asm
+  0:    48 89 f8                       mov    %rdi, %rax
+  3:    eb 03                          jmp    8 <loop+0x8>
+  5:    48 d1 f8                       sar    %rax
+  8:    48 85 c0                       test   %rax, %rax
+  b:    7f f8                          jg     5 <loop+0x5>
+  d:    f3 c3                          repz retq
+  ```
+
+* Trong các chú thích ở phía bên phải do disassembler tạo ra, các đích nhảy (jump targets) được chỉ ra là `0x8` cho lệnh nhảy ở dòng 2 và `0x5` cho lệnh nhảy ở dòng 5 (trình dịch ngược liệt kê tất cả các số dưới dạng hệ thập lục phân). Tuy nhiên, khi nhìn vào các mã hóa byte của các lệnh này, chúng ta thấy rằng đích nhảy của lệnh nhảy đầu tiên được mã hóa (trong byte thứ hai) là `0x03`. Cộng giá trị này với `0x5` (là địa chỉ của lệnh tiếp theo ngay sau lệnh nhảy), ta được địa chỉ đích nhảy là `0x8` — chính là địa chỉ của lệnh ở dòng 4.
+* Tương tự, đích nhảy của lệnh nhảy thứ hai được mã hóa là `0xf8` (thập phân là -8), sử dụng biểu diễn bù hai (two's-complement) 1 byte. Cộng giá trị này với `0xd` (thập phân là 13 — địa chỉ của lệnh ở dòng 6), ta được `0x5` — chính là địa chỉ của lệnh ở dòng 3.
+* Như các ví dụ này minh họa, giá trị của **bộ đếm chương trình (program counter - PC)** khi thực hiện địa chỉ hóa PC-relative chính là địa chỉ của lệnh nằm ngay sau lệnh nhảy, chứ không phải là địa chỉ của chính lệnh nhảy đó. Quy ước này bắt nguồn từ các triển khai sơ khai, khi bộ xử lý cập nhật bộ đếm chương trình như là bước đầu tiên trong quá trình thực thi một lệnh.
+* Dưới đây là phiên bản đã dịch ngược của chương trình sau khi **liên kết (linking)**:
+
+  ```asm
+  4004d0:    48 89 f8                  mov    %rdi, %rax
+  4004d3:    eb 03                     jmp    8 <loop+0x8>
+  4004d5:    48 d1 f8                  sar    %rax
+  4004d8:    48 85 c0                  test   %rax, %rax
+  4004db:    7f f8                     jg     5 <loop+0x5>
+  4004dd:    f3 c3                     repz retq
+  ```
+
+* Các lệnh đã được di dời (relocated) đến các địa chỉ khác nhau, nhưng mã hóa của các đích nhảy ở dòng 2 và dòng 5 vẫn không hề thay đổi. Bằng cách sử dụng mã hóa PC-relative cho các đích nhảy, các lệnh có thể được mã hóa một cách nhỏ gọn (chỉ tốn 2 byte) và mã đối tượng (object code) có thể được dịch chuyển đến các vị trí khác nhau trong bộ nhớ mà không cần phải thay đổi nội dung của chính các lệnh đó.
+
+> [!Note]
+>
+> **What do the instruction rep and repz do**
+>
+> Dòng 8 trong đoạn mã hợp ngữ ở trang 243 chứa tổ hợp lệnh `rep; ret`. Trong mã được dịch ngược (dòng 6), chúng được hiển thị là `repz retq`. Chúng ta có thể suy ra rằng `repz` là một từ đồng nghĩa của `rep`, cũng giống như `retq` là từ đồng nghĩa của `ret`. Khi tra cứu tài liệu của Intel và AMD về lệnh `rep`, chúng ta thấy rằng nó thường được dùng để thực hiện các thao tác chuỗi lặp lại. Việc sử dụng nó ở đây có vẻ hoàn toàn không phù hợp. Câu trả lời cho "câu đố" này nằm trong hướng dẫn dành cho các kỹ sư viết trình biên dịch của AMD. Họ khuyến nghị sử dụng tổ hợp lệnh `rep` đứng trước `ret` để tránh việc khiến lệnh `ret` trở thành đích đến của một lệnh nhảy có điều kiện. Nếu không có lệnh `rep`, lệnh `jg` (dòng 7 của mã hợp ngữ) sẽ trực tiếp dẫn đến lệnh ret khi nhánh nhảy không được thực hiện. Theo AMD, các bộ vi xử lý của họ không thể dự đoán chính xác đích đến của lệnh `ret` khi nó bị tiếp cận từ một lệnh nhảy. Trong trường hợp này, lệnh `rep` đóng vai trò như một hình thức lệnh **không thực hiện (no-operation - NOP)**, do đó việc chèn nó vào làm đích đến của lệnh nhảy không làm thay đổi hành vi của chương trình, ngoại trừ việc giúp mã chạy nhanh hơn trên các bộ vi xử lý của AMD. Chúng ta có thể an tâm bỏ qua bất kỳ lệnh rep hoặc repz nào mà chúng ta bắt gặp trong phần còn lại của cuốn sách này.
+
+
+* **Practice Problem 3.15**
+
+  Trong các đoạn trích dẫn sau đây từ một tệp nhị phân đã được dịch ngược (disassembled binary), một số thông tin đã được thay thế bằng các chữ X. Hãy trả lời các câu hỏi sau về những lệnh này:
+
+  A. Đích đến (target) của lệnh `je` dưới đây là gì? (Bạn không cần biết bất cứ điều gì về lệnh callq ở đây.)
+
+     ```asm
+     4003fa:  74 02   je   XXXXXX
+     4003fc:  ff d0   callq *rax
+     ```
+
+ B. Đích đến của lệnh je dưới đây là gì?
+
+    ```asm
+    40042f:   74 f4   je   XXXXXX
+    400431:   5d      pop  %rbp
+    ```
+
+ C. Địa chỉ của lệnh ja và pop là gì?
+    
+    ```asm
+    XXXXXX:   77 02   ja   400547
+    XXXXXX:   5d      pop  %rbp
+    ```
+
+ D. Trong đoạn mã sau đây, đích nhảy được mã hóa dưới dạng **PC-relative** với số bù hai (two's-complement) 4 byte. Các byte được liệt kê từ ít quan trọng nhất đến quan trọng nhất (little-endian byte ordering của x86-64). Đích nhảy là địa chỉ nào?
+    
+    ```asm
+    4005e8:   e9 73 ff ff ff        jmpq XXXXXXX
+    4005ed:   90                    nop
+    ```
+    
+
+  
 ## Procedures (Hàm)
 
 ## Array Allocation and Access (Cấp phát và truy cặp mảng)
