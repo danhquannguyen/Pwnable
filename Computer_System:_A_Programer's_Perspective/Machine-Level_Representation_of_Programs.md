@@ -752,6 +752,93 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
   ```
 
   ...trong mã được tạo ra từ ngôn ngữ C, nơi mà không hề có phép toán EXCLUSIVE-OR (XOR) nào được sử dụng.
+
+  * A. Lệnh này được sử dụng để thiết lập thanh ghi `%rcx` về giá trị `0`, bằng cách khai thác tính chất toán học là $x \text{ \^{} } x = 0$ (x XOR với chính nó luôn bằng 0) áp dụng cho mọi giá trị của $x$. Lệnh này tương đương với câu lệnh `x = 0` trong ngôn ngữ C.
+  * B. Một cách trực tiếp (rõ ràng/dễ hiểu) hơn để thiết lập thanh ghi `%rcx` về `0` là sử dụng lệnh `movq $0, %rcx`.
+  * C. Tuy nhiên, khi hợp dịch (assembling) và dịch ngược (disassembling) đoạn mã này, chúng ta phát hiện ra rằng phiên bản sử dụng lệnh `xorq` chỉ tốn **3 byte** bộ nhớ, trong khi phiên bản sử dụng lệnh `movq` đòi hỏi tới **7 byte**. Các cách khác để thiết lập `%rcx` về 0 thường dựa vào một tính chất đặc biệt (của kiến trúc x86-64): **bất kỳ lệnh nào cập nhật 4 byte thấp của một thanh ghi đều sẽ tự động làm cho các byte bậc cao (high-order bytes) của thanh ghi đó bị gán bằng 0**. Do đó, chúng ta cũng có thể sử dụng lệnh `xorl %ecx,%ecx` (chỉ tốn 2 byte) hoặc `movl $0,%ecx` (tốn 5 byte).
+
+
+### 3.5.5 Special Arithmetic Operations
+<br>
+
+* Như chúng ta đã thấy ở Phần 2.3, việc nhân hai số nguyên 64-bit có dấu hoặc không dấu có thể tạo ra một tích số cần tới 128 bit để biểu diễn. Tập lệnh x86-64 cung cấp các hỗ trợ khá hạn chế đối với những phép toán liên quan đến các số 128-bit (16 byte). Tiếp nối quy ước đặt tên trước đó bao gồm **word** (2 byte), **double word** (4 byte), và **quad word** (8 byte), Intel gọi một đại lượng kích thước 16-byte là một **oct word**. Hình 3.12 mô tả các lệnh hỗ trợ việc tạo ra kết quả tích 128-bit đầy đủ từ hai số 64-bit, cũng như các lệnh hỗ trợ phép chia số nguyên.
+  * <img width="548" height="281" alt="image" src="https://github.com/user-attachments/assets/8e0f79a4-2b16-4ac3-9f3a-7a413ee982a2" />
+
+  * Lệnh `imulq` có hai dạng khác nhau:
+
+    * Dạng thứ nhất (được hiển thị trong Hình 3.10) là một thành viên của nhóm lệnh imul. Ở dạng này, nó đóng vai trò là một lệnh nhân "hai toán hạng" (two-operand), giúp tạo ra một tích 64-bit từ hai toán hạng 64-bit. Nó triển khai các phép toán nhân *u64 (không dấu) và *t64 (có dấu) đã được mô tả ở Phần 2.3.4 và 2.3.5. (Hãy nhớ lại rằng: khi cắt ngắn tích số xuống chỉ còn 64 bit, cả phép nhân không dấu và phép nhân bù hai đều có cùng một cách thức hoạt động ở cấp độ bit).
+
+    * Dạng thứ hai: Ngoài ra, tập lệnh x86-64 còn bao gồm hai lệnh nhân "một toán hạng" (one-operand) khác nhau nhằm tính toán ra toàn bộ tích 128-bit của hai giá trị 64-bit:
+
+      * Lệnh `mulq` dành cho phép nhân không dấu.
+
+      * Lệnh `imulq` dành cho phép nhân bù hai (có dấu).
+  * Đối với cả hai lệnh một toán hạng này, một đối số bắt buộc phải nằm trong thanh ghi `%rax`, và đối số còn lại được cung cấp dưới dạng toán hạng nguồn (source operand) đi kèm trong lệnh. Kết quả tích số sau đó sẽ được tự động lưu trữ vào hai thanh ghi:
+
+    * `%rdx` lưu giữ 64 bit bậc cao (high-order bits).
+
+    * `%rax` lưu giữ 64 bit bậc thấp (low-order bits).
+   
+  * Mặc dù cùng một tên lệnh là `imulq` lại được sử dụng cho hai thao tác nhân hoàn toàn khác biệt nhau (loại hai toán hạng và loại một toán hạng), nhưng trình hợp dịch (assembler) vẫn có thể phân biệt chính xác ý đồ của người viết code bằng cách đếm số lượng toán hạng được truyền vào lệnh.
+  * Để làm ví dụ, đoạn mã C sau đây minh họa việc tạo ra một tích 128-bit của hai số 64-bit không dấu `x` và `y`:
+
+    ```c
+    #include<nttypes.h>
+
+    typedef unsigned __int128 uint128_t;
+
+    void store_uprod(uint128_t *dest, uint64_t x, uint64_t y){
+        *dest= x * (uint128_t) y;
+    }
+    ```
+
+    Trong chương trình này, chúng ta khai báo rõ ràng `x` và `y` là các số 64-bit, sử dụng các định nghĩa được khai báo trong tệp `inttypes.h` (đây là một phần mở rộng của tiêu chuẩn C).
+
+    Thật không may, tiêu chuẩn này không có điều khoản hỗ trợ cho các giá trị 128-bit. Thay vào đó, chúng ta phải dựa vào sự hỗ trợ của trình biên dịch `gcc` dành cho các số nguyên 128-bit, được khai báo thông qua từ khóa `__int128`. Đoạn mã của chúng ta sử dụng một khai báo `typedef` để định nghĩa kiểu dữ liệu `uint128_t`, tuân theo quy tắc đặt tên tương tự như các kiểu dữ liệu khác có trong `inttypes.h`. Đoạn mã cũng chỉ định rằng tích thu được (kết quả của phép nhân) sẽ được lưu trữ tại vùng nhớ 16 byte được trỏ tới bởi con trỏ `dest`.
+
+    Mã hợp ngữ (assembly code) do gcc tạo ra cho hàm này như sau:
+
+    ```asm
+    void store_uprod(uint128_t *dest, uint64_t x, uint64_t y)
+    dest in %rdi, x in %rsi, y in %rdx
+    store_uprod:
+       movq  %rdi, %rax            Copy x to multiplicand
+       mulq  %rdx                  Multiply by y
+       movq  %rax, (%rdi)          Store lower 8 bytes at dest
+       movq  %rdx, 8(%rdi)         Store uppper 8 bytes at dest+8
+       ret
+    ```
+
+  * Hãy chú ý rằng việc lưu trữ tích số (kết quả của phép nhân) đòi hỏi tới hai lệnh `movq`: một lệnh dành cho 8 byte bậc thấp (dòng 4) và một lệnh dành cho 8 byte bậc cao (dòng 5). Vì mã máy được tạo ra cho kiến trúc little-endian, nên các byte bậc cao sẽ được lưu trữ ở các địa chỉ bộ nhớ cao hơn, đúng như được chỉ định bởi đặc tả địa chỉ `8(%rdi)`.
+  * Bảng các phép toán số học trước đây của chúng ta (Hình 3.10) không liệt kê bất kỳ phép toán chia hay phép chia lấy dư (modulus) nào. Các phép toán này được cung cấp bởi các lệnh chia một toán hạng (single-operand divide instructions), hoạt động tương tự như các lệnh nhân một toán hạng. Lệnh chia có dấu `idivq` lấy số bị chia (dividend) là một đại lượng 128-bit nằm trong các thanh ghi `%rdx` (chứa 64 bit bậc cao) và `%rax` (chứa 64 bit bậc thấp). Số chia (**divisor**) được cung cấp dưới dạng toán hạng đi kèm với lệnh. Lệnh này sẽ lưu trữ thương số (**quotient**) vào thanh ghi `%rax` và số dư (**remainder**) vào thanh ghi `%rdx`.
+  * Đối với hầu hết các ứng dụng của phép chia 64-bit (sách gốc viết nhầm là "64-bit addition"), số bị chia thường chỉ được cho dưới dạng một giá trị 64-bit. Giá trị này cần được lưu trữ trong thanh ghi `%rax`. Khi đó, các bit của thanh ghi `%rdx` phải được thiết lập thành toàn số 0 (đối với số học không dấu) hoặc lấp đầy bằng bit dấu của thanh ghi `%rax` (đối với số học có dấu). Thao tác thứ hai (mở rộng dấu) có thể được thực hiện bằng cách sử dụng lệnh cqto$^2$. Lệnh này không yêu cầu toán hạng nào—nó ngầm định đọc bit dấu từ `%rax` và sao chép bit dấu đó lên toàn bộ các bit của thanh ghi `%rdx`.
+  * Để minh họa cho việc triển khai phép chia trong kiến trúc x86-64, hàm C dưới đây sẽ tính toán thương số và số dư của hai số nguyên 64-bit có dấu:
+
+    ```c
+    void remdiv(long x, long y, long *qp, long *rp){
+        long q = x/y;
+        long r = x%y;
+        *qp = q;
+        *rp = r;
+    }
+    ```
+
+    ```asm
+    voi remdiv(long x, long y, long *qp, long *rp)
+    x in %rdi, y in %rsi, qp in %rdx, rp in %rcx
+    remdiv:
+      movq   %rdx, %r8      copy qp
+      movq   %rdi, %rax     move x to lower 8 bytes of dividend
+      cqto                  sign-extend too upper 8 bytes of dividend
+      idivq  %rsi           divide by y
+      movq   %rax, (%r8)    store quotient at qp
+      movq   %rdx, (%rcx)   store remainder at rp
+    ```
+
+    Trong đoạn mã này, đối số `rp` trước tiên phải được cất tạm vào một thanh ghi khác (ở dòng 2), bởi vì thanh ghi đối số `%rdx` bị bắt buộc sử dụng cho phép toán chia. Các dòng 3–4 sau đó chuẩn bị số bị chia (**dividend**) bằng cách sao chép và thực hiện mở rộng dấu (**sign-extending**) cho biến `x`. Sau khi thực hiện phép chia, thương số (**quotient**) nằm trong thanh ghi `%rax` sẽ được lưu vào vị trí do con trỏ qp chỉ định (dòng 6), trong khi số dư (**remainder**) nằm trong thanh ghi %rdx sẽ được lưu vào vị trí của con trỏ rp (dòng 7).
+
+    Phép chia không dấu (**unsigned division**) thì sử dụng lệnh `divq`. Theo thông lệ, thanh ghi `%rdx` sẽ được thiết lập về giá trị 0 trước khi thực hiện lệnh này.
+    
 ## Control (Điều khiển)
 
 ## Procedures (Hàm)
