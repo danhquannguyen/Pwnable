@@ -702,10 +702,46 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
     sarq %cl, %rax     x >>= n
   ```
 
-  
-  <img width="432" height="389" alt="image" src="https://github.com/user-attachments/assets/3f84390f-a2c1-4b49-84c5-1f51bcf50b3a" />
+### 3.5.4 Discussion
+<br>
+* <img width="432" height="389" alt="image" src="https://github.com/user-attachments/assets/3f84390f-a2c1-4b49-84c5-1f51bcf50b3a" />
 
-  
+* Chúng ta thấy rằng hầu hết các lệnh được hiển thị trong Hình 3.10 đều có thể được sử dụng cho cả phép toán số học không dấu (unsigned) hoặc bù hai (two's-complement). Chỉ có phép dịch phải (right shifting) mới yêu cầu các lệnh phân biệt giữa dữ liệu có dấu và không dấu. Đây là một trong những đặc điểm khiến số học bù hai trở thành phương pháp được ưa chuộng nhất để cài đặt số học số nguyên có dấu.
+
+* Hình 3.11 cho thấy một ví dụ về một hàm thực hiện các phép toán số học và bản dịch của nó sang mã hợp ngữ (assembly code). Các đối số `x`, `y`, và `z` ban đầu được lưu trữ tương ứng trong các thanh ghi `%rdi`, `%rsi`, và `%rdx`. Các lệnh của assembly tương ứng rất sát với các dòng mã nguồn C:
+
+ * Dòng 2 tính toán giá trị của biểu thức `x^y` (x XOR y).
+
+ * Dòng 3 và 4 tính toán biểu thức `z*48` thông qua sự kết hợp giữa lệnh `leaq` và lệnh dịch bit (shift instructions).
+
+ * Dòng 5 thực hiện phép toán AND giữa `t1` và `0x0F0F0F0F`.
+
+ * Dòng 6 thực hiện phép trừ cuối cùng.
+
+ * Vì đích đến của phép trừ là thanh ghi `%rax`, đây sẽ chính là giá trị được trả về bởi hàm.
+
+* Trong assembly code của Hình 3.11, chuỗi các giá trị nằm trong thanh ghi `%rax` tương ứng với các giá trị của chương trình là `3*z`, `z*48`, và `t4` (đóng vai trò là giá trị trả về). Nhìn chung, compilers sẽ tạo ra mã sử dụng các thanh ghi độc lập để lưu trữ nhiều giá trị chương trình khác nhau và luân chuyển các giá trị này qua lại giữa các thanh ghi.
+
+* **Practice Problem 3.10**
+
+  ```asm
+  arith3:
+    orq  %rsi, %rdx
+    sarq $9, %rdx
+    notq %rdx
+    movq %rdx, %rax
+    subq %rsi, %rax
+    ret
+  ```
+
+  ```c
+  short arith3(short x, short y, short z){
+      short p1 = y | z;
+      short p2 = p1 >> 9;
+      short p3 =  ~p2;
+      short p4 =  y - p3;
+      return p4;
+  }
 ## Control (Điều khiển)
 
 ## Procedures (Hàm)
