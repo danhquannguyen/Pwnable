@@ -802,7 +802,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
     void store_uprod(uint128_t *dest, uint64_t x, uint64_t y)
     dest in %rdi, x in %rsi, y in %rdx
     store_uprod:
-       movq  %rdi, %rax            Copy x to multiplicand
+       movq  %rsi, %rax            Copy x to multiplicand
        mulq  %rdx                  Multiply by y
        movq  %rax, (%rdi)          Store lower 8 bytes at dest
        movq  %rdx, 8(%rdi)         Store uppper 8 bytes at dest+8
