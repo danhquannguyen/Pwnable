@@ -742,6 +742,16 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
       short p4 =  y - p3;
       return p4;
   }
+
+* **Practice Problem 3.11**
+
+  Chúng ta rất thường bắt gặp các dòng mã Assembly có dạng như sau...
+
+  ```asm
+  xorq %rcx, %rcx
+  ```
+
+  ...trong mã được tạo ra từ ngôn ngữ C, nơi mà không hề có phép toán EXCLUSIVE-OR (XOR) nào được sử dụng.
 ## Control (Điều khiển)
 
 ## Procedures (Hàm)
