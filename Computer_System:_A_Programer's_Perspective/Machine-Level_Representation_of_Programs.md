@@ -994,6 +994,7 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
   ```
 
 * Các lệnh đã được di dời (relocated) đến các địa chỉ khác nhau, nhưng mã hóa của các đích nhảy ở dòng 2 và dòng 5 vẫn không hề thay đổi. Bằng cách sử dụng mã hóa PC-relative cho các đích nhảy, các lệnh có thể được mã hóa một cách nhỏ gọn (chỉ tốn 2 byte) và mã đối tượng (object code) có thể được dịch chuyển đến các vị trí khác nhau trong bộ nhớ mà không cần phải thay đổi nội dung của chính các lệnh đó.
+* Các lệnh nhảy (jump instructions) cung cấp một phương tiện để triển khai việc thực thi có điều kiện (cấu trúc if), cũng như một vài cấu trúc vòng lặp (loop constructs) khác nhau.
 
 > [!Note]
 >
@@ -1035,7 +1036,10 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
     ```
     
 
-  
+### 3.6.5 Implementing Conditional Branches with Conditional Control
+<br>
+
+
 ## Procedures (Hàm)
 
 ## Array Allocation and Access (Cấp phát và truy cặp mảng)
