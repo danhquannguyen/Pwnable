@@ -1013,28 +1013,25 @@ Năm 1980, Intel giới thiệu bộ đồng xử lý (coprocessor) số thực 
     4003fa:  74 02   je   XXXXXX
     4003fc:  ff d0   callq *rax
     ```
+  * B. Đích đến của lệnh je dưới đây là gì?
 
- * B. Đích đến của lệnh je dưới đây là gì?
+    ```asm
+    40042f:   74 f4   je   XXXXXX
+    400431:   5d      pop  %rbp
+    ```
+  * C. Địa chỉ của lệnh ja và pop là gì?
 
-   
-   ```asm
-   40042f:   74 f4   je   XXXXXX
-   400431:   5d      pop  %rbp
-   ```
-
- * C. Địa chỉ của lệnh ja và pop là gì?
+    ```asm
+    XXXXXX:   77 02   ja   400547
+    XXXXXX:   5d      pop  %rbp
+    ```
+  * D. Trong đoạn mã sau đây, đích nhảy được mã hóa dưới dạng **PC-relative** với số bù hai (two's-complement) 4 byte. Các byte được liệt kê từ ít quan trọng nhất đến quan trọng nhất (little-endian byte ordering của x86-64). Đích nhảy là địa chỉ nào?
     
-   ```asm
-   XXXXXX:   77 02   ja   400547
-   XXXXXX:   5d      pop  %rbp
-   ```
-
- * D. Trong đoạn mã sau đây, đích nhảy được mã hóa dưới dạng **PC-relative** với số bù hai (two's-complement) 4 byte. Các byte được liệt kê từ ít quan trọng nhất đến quan trọng nhất (little-endian byte ordering của x86-64). Đích nhảy là địa chỉ nào?
+    ```asm
+    4005e8:   e9 73 ff ff ff        jmpq XXXXXXX
+    4005ed:   90                    nop
+    ```
     
-   ```asm
-   4005e8:   e9 73 ff ff ff        jmpq XXXXXXX
-   4005ed:   90                    nop
-   ```
     
 
 ### 3.6.5 Implementing Conditional Branches with Conditional Control
